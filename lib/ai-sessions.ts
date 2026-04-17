@@ -1,90 +1,83 @@
 'use server'
 
+/**
+ * AI sessions — thin server action layer over the session repository.
+ *
+ * Responsibilities:
+ *   1. Authenticate the calling user (never trust user_id from the client).
+ *   2. Strip base64 image data URLs and persist to R2 instead, replacing
+ *      the URLs in message content with 7-day signed R2 URLs.
+ *   3. Auto-generate session titles from the first user message.
+ *   4. Fire memory extraction in the background after every meaningful save.
+ */
+
 import { createClient } from '@/lib/supabase/server'
-import { supabaseAdmin } from '@/lib/supabase/admin'
 import { uploadToR2, signedDownloadUrl, r2Configured } from '@/lib/r2'
+import {
+    listSessions as repoListSessions,
+    getSession as repoGetSession,
+    createSession as repoCreateSession,
+    updateSessionMessages as repoUpdateSessionMessages,
+    renameSession as repoRenameSession,
+    deleteSession as repoDeleteSession,
+} from '@/lib/repositories/sessions'
+import { getUserMemories, saveUserMemories } from '@/lib/repositories/memories'
+import type { ChatMessageRow, SessionListItem } from '@/lib/types/database'
 
-const MAX_SESSIONS = 50
-const MAX_MEMORIES = 30  // max facts per user (prunes oldest when exceeded)
+const MAX_MEMORIES = 30
 
-interface ChatMessage {
-    role: 'user' | 'assistant'
-    content: string
-    image?: string
-}
+// ── Session CRUD ──────────────────────────────────────────────────────────
 
-// ── Get all sessions for current user ─────────────────────
-export async function getSessions(): Promise<{ id: string; title: string; updated_at: string }[]> {
+export async function getSessions(): Promise<SessionListItem[]> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return []
-
-    const { data } = await (supabaseAdmin as any)
-        .from('ai_chat_sessions')
-        .select('id, title, updated_at')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false })
-        .limit(MAX_SESSIONS)
-
-    return (data ?? []) as any[]
+    return repoListSessions(user.id)
 }
 
-// ── Get a single session with messages ────────────────────
-export async function getSession(sessionId: string): Promise<{ id: string; title: string; messages: ChatMessage[] } | null> {
+export async function getSession(sessionId: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return null
-
-    const { data } = await (supabaseAdmin as any)
-        .from('ai_chat_sessions')
-        .select('id, title, messages')
-        .eq('id', sessionId)
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-    return data as any
+    return repoGetSession(sessionId, user.id)
 }
 
-// ── Create a new session ──────────────────────────────────
 export async function createSession(): Promise<string | null> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return null
-
-    // Auto-delete oldest if at limit
-    const { data: existing } = await (supabaseAdmin as any)
-        .from('ai_chat_sessions')
-        .select('id')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: true })
-
-    if (existing && existing.length >= MAX_SESSIONS) {
-        const toDelete = existing.slice(0, existing.length - MAX_SESSIONS + 1)
-        for (const s of toDelete) {
-            await (supabaseAdmin as any).from('ai_chat_sessions').delete().eq('id', s.id)
-        }
-    }
-
-    const { data, error } = await (supabaseAdmin as any)
-        .from('ai_chat_sessions')
-        .insert({ user_id: user.id, title: 'New Chat', messages: [] })
-        .select('id')
-        .single()
-
-    return error ? null : data.id
+    return repoCreateSession(user.id)
 }
 
-// ── Update session messages + auto-title ──────────────────
-// Strip base64 image data URLs from content + any image field so sessions
-// don't bloat the DB (a single generated image is 100-500KB, multiplied per
-// save). We replace with a tiny marker so the UI can still render "[image]"
-// Upload base64 images to R2, replace data URLs with signed R2 URLs.
-// This way images persist across page refreshes — no more "regenerate to see".
-async function persistImages(messages: ChatMessage[], userId: string): Promise<ChatMessage[]> {
-    const result: ChatMessage[] = []
+export async function renameSession(sessionId: string, title: string): Promise<void> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    return repoRenameSession(sessionId, user.id, title)
+}
+
+export async function deleteSession(sessionId: string): Promise<void> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    return repoDeleteSession(sessionId, user.id)
+}
+
+// ── Image persistence — base64 → R2 ──────────────────────────────────────
+
+/**
+ * Upload any base64 image data URLs in message content to R2, replacing them
+ * with signed R2 URLs. Prevents the sessions table from bloating with
+ * hundreds of KB of base64 per generated image and lets images survive
+ * across page refreshes.
+ *
+ * Signed URL lifetime: 7 days. Short enough to limit blast radius if a URL
+ * leaks, long enough that users don't need to regenerate for normal use.
+ */
+async function persistImages(messages: ChatMessageRow[], userId: string): Promise<ChatMessageRow[]> {
+    const result: ChatMessageRow[] = []
     for (const m of messages) {
-        const out: ChatMessage = { role: m.role, content: m.content ?? '' }
-        // Find all base64 image data URLs in content
+        const out: ChatMessageRow = { role: m.role, content: m.content ?? '' }
         if (out.content && out.content.includes('data:image') && r2Configured()) {
             const imgRegex = /!\[([^\]]*)\]\((data:image\/([^;]+);base64,([^)]+))\)/g
             let match
@@ -93,108 +86,70 @@ async function persistImages(messages: ChatMessage[], userId: string): Promise<C
                 try {
                     const key = `${userId}/gen/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}.${mimeExt === 'jpeg' ? 'jpg' : 'png'}`
                     await uploadToR2({ key, base64: b64Data, contentType: `image/${mimeExt}` })
-                    const url = await signedDownloadUrl(key, 86400 * 30) // 30 day URL
+                    const url = await signedDownloadUrl(key, 7 * 24 * 3600)
                     out.content = out.content.replace(fullMatch, `![${alt}](${url})`)
                 } catch {
-                    // If R2 upload fails, strip with placeholder
                     out.content = out.content.replace(fullMatch, `![${alt || 'Generated image'} — refresh to reload]()`)
                 }
             }
-            // Clean any remaining raw base64 that wasn't in markdown image syntax
             out.content = out.content.replace(/data:image\/[^;\s)]+;base64,[A-Za-z0-9+/=]{100,}/g, '[image-data-stripped]')
         }
-        // Strip base64 from user image attachments (vision model uses them live, not from history)
-        if (m.image) { /* don't persist raw base64 */ }
         result.push(out)
     }
     return result
 }
 
-export async function updateSession(sessionId: string, messages: ChatMessage[]): Promise<void> {
+// ── Session save + memory extraction ─────────────────────────────────────
+
+export async function updateSession(sessionId: string, messages: ChatMessageRow[]): Promise<void> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
     const slim = await persistImages(messages, user.id)
 
-    // Auto-generate title from first user message
     const firstUserMsg = slim.find(m => m.role === 'user')
     const title = firstUserMsg
         ? firstUserMsg.content.slice(0, 50) + (firstUserMsg.content.length > 50 ? '...' : '')
         : 'New Chat'
 
-    await (supabaseAdmin as any)
-        .from('ai_chat_sessions')
-        .update({ messages: slim, title, updated_at: new Date().toISOString() })
-        .eq('id', sessionId)
-        .eq('user_id', user.id)
+    await repoUpdateSessionMessages(sessionId, user.id, slim, title)
 
-    // Extract memories in background (non-blocking — don't slow down the save)
     if (slim.length >= 4) {
-        extractMemoriesFromChat(user.id, slim).catch(() => {})
+        extractMemoriesFromChat(user.id, slim).catch(() => { })
     }
 }
 
-// ── Rename a session ──────────────────────────────────────
-export async function renameSession(sessionId: string, title: string): Promise<void> {
+// ── Memory layer ─────────────────────────────────────────────────────────
+
+/**
+ * Server-action wrapper around the memory repository.
+ * (Plain re-exports aren't allowed in 'use server' files.)
+ */
+export async function getUserMemoriesForCurrentUser(): Promise<string[]> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    await (supabaseAdmin as any)
-        .from('ai_chat_sessions')
-        .update({ title: title.slice(0, 80) })
-        .eq('id', sessionId)
-        .eq('user_id', user.id)
+    if (!user) return []
+    return getUserMemories(user.id)
 }
 
-// ── Delete a session ──────────────────────────────────────
-export async function deleteSession(sessionId: string): Promise<void> {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    await (supabaseAdmin as any)
-        .from('ai_chat_sessions')
-        .delete()
-        .eq('id', sessionId)
-        .eq('user_id', user.id)
-}
-
-// ============================================================================
-// AI MEMORY — persistent facts across all chats (ChatGPT-style memory)
-// ============================================================================
-
-// ── Get user memories ────────────────────────────────────
-export async function getUserMemories(userId: string): Promise<string[]> {
-    const { data } = await (supabaseAdmin as any)
-        .from('ai_user_memories')
-        .select('facts')
-        .eq('user_id', userId)
-        .maybeSingle()
-    return (data?.facts as string[]) ?? []
-}
-
-// ── Save user memories ───────────────────────────────────
-export async function saveUserMemories(userId: string, facts: string[]): Promise<void> {
-    // Keep only the most recent MAX_MEMORIES facts
-    const trimmed = facts.slice(-MAX_MEMORIES)
-    await (supabaseAdmin as any)
-        .from('ai_user_memories')
-        .upsert({ user_id: userId, facts: trimmed, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
-}
-
-// ── Extract memories from a chat session ─────────────────
-// Uses a cheap fast model (Groq Llama 3.1 8B) to extract key facts
-// the user revealed about themselves. Called when a session is saved.
-export async function extractMemoriesFromChat(userId: string, messages: ChatMessage[]): Promise<void> {
-    // Only extract if there's meaningful conversation (>= 4 messages)
+/**
+ * Extract long-term memories from a chat session using a cheap model. Runs
+ * in the background after every session save — never blocks the user's
+ * request.
+ *
+ * The extractor is itself an LLM, so we rely on the pattern stripping done
+ * at prompt injection time (lib/prompts/sanitize.ts) to defend its input.
+ */
+export async function extractMemoriesFromChat(
+    userId: string,
+    messages: ChatMessageRow[]
+): Promise<void> {
     const userMsgs = messages.filter(m => m.role === 'user')
     if (userMsgs.length < 2) return
 
-    // Build a summary of the conversation for extraction
     const chatSummary = messages
-        .slice(-20) // last 20 messages max
+        .slice(-20)
         .map(m => `${m.role === 'user' ? 'User' : 'AI'}: ${m.content.slice(0, 300)}`)
         .join('\n')
 
@@ -203,10 +158,10 @@ export async function extractMemoriesFromChat(userId: string, messages: ChatMess
         ? `\nExisting memories (do NOT repeat these):\n${existingFacts.map((f, i) => `${i + 1}. ${f}`).join('\n')}`
         : ''
 
-    const prompt = `You are a memory extractor. Read this chat between a user and Cascade AI. Extract ONLY new facts about the USER that would be useful in future conversations. Facts like: their name, role, department, preferences, writing style, topics they care about, people they work with, projects they're on.
+    const prompt = `You are a memory extractor. Read this chat between a user and an AI. Extract ONLY new facts about the USER that would be useful in future conversations. Facts like: their name, role, department, preferences, writing style, topics they care about, people they work with, projects they're on.
 
 Rules:
-- Return ONLY a JSON array of short strings. Example: ["User prefers formal tone","User works in accounts","User's manager is Sarah"]
+- Return ONLY a JSON array of short strings. Example: ["User prefers formal tone","User works in accounts"]
 - Each fact must be a complete, self-contained sentence
 - Skip anything already known (see existing memories below)
 - If no new facts found, return []
@@ -219,8 +174,7 @@ ${chatSummary}
 
 Return ONLY a JSON array, nothing else:`
 
-    // Use Groq Llama 3.1 8B — cheapest, fastest
-    const groqKeys = Array.from({ length: 9 }, (_, i) =>
+    const groqKeys = Array.from({ length: 15 }, (_, i) =>
         process.env[i === 0 ? 'GROQ_API_KEY' : `GROQ_API_KEY_${i + 1}`]
     ).filter(Boolean) as string[]
 
@@ -238,25 +192,23 @@ Return ONLY a JSON array, nothing else:`
             })
             if (res.status === 429) continue
             if (!res.ok) continue
-            const data = await res.json()
+            const data = await res.json() as { choices?: { message?: { content?: string } }[] }
             const text = data.choices?.[0]?.message?.content?.trim() ?? ''
-            // Parse JSON array from response
             const match = text.match(/\[[\s\S]*\]/)
             if (!match) continue
-            const newFacts: string[] = JSON.parse(match[0])
+            const newFacts: unknown = JSON.parse(match[0])
             if (!Array.isArray(newFacts) || newFacts.length === 0) return
-            // Merge with existing, dedup
+
             const merged = [...existingFacts]
             for (const fact of newFacts) {
                 if (typeof fact !== 'string' || fact.length < 5) continue
-                // Simple dedup: skip if very similar to existing
                 const isDupe = merged.some(existing =>
                     existing.toLowerCase().includes(fact.toLowerCase().slice(0, 30)) ||
                     fact.toLowerCase().includes(existing.toLowerCase().slice(0, 30))
                 )
                 if (!isDupe) merged.push(fact)
             }
-            await saveUserMemories(userId, merged)
+            await saveUserMemories(userId, merged.slice(-MAX_MEMORIES))
             return
         } catch { continue }
     }
