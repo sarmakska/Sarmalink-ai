@@ -1,0 +1,39 @@
+{
+  "name": "cascade-ai",
+  "version": "1.0.0",
+  "description": "Open-source multi-provider AI assistant with automatic failover. Built by Sarma Linux.",
+  "private": false,
+  "license": "MIT",
+  "author": "Sarma Linux <hello@sarmalinux.com> (https://sarmalinux.com)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sarmakska/cascade-ai"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.600.0",
+    "@aws-sdk/s3-request-presigner": "^3.600.0",
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.49.4",
+    "lucide-react": "^0.475.0",
+    "mammoth": "^1.8.0",
+    "next": "^14.2.29",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.8.3"
+  }
+}
