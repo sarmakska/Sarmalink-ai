@@ -86,9 +86,11 @@ Extract memories in background (Groq Llama 8B)
 
 ---
 
-## Quick Start
+## Quick Start — Minimum Setup (3 env vars, ~10 min)
 
-### 1. Clone
+You only need **Supabase** (database + auth) and **Groq** (chat inference) to get a working assistant. Everything else is optional.
+
+### 1. Clone & install
 
 ```bash
 git clone https://github.com/sarmakska/sarmalink-ai.git
@@ -96,24 +98,25 @@ cd sarmalink-ai
 npm install
 ```
 
-### 2. Get your API keys (all free, no credit card)
+### 2. Get two free API keys
 
 | Provider | Sign up | What you get |
 |---|---|---|
 | **Supabase** | [supabase.com](https://supabase.com) | Database + auth (1GB free) |
-| **Groq** | [console.groq.com](https://console.groq.com) | GPT-OSS 120B, Llama 3.3, Qwen 3 |
-| **SambaNova** | [cloud.sambanova.ai](https://cloud.sambanova.ai) | DeepSeek V3.2 (685B frontier model) |
-| **Cerebras** | [cloud.cerebras.ai](https://cloud.cerebras.ai) | 2,000 tok/sec inference |
-| **Google Gemini** | [aistudio.google.com](https://aistudio.google.com/app/apikey) | Live web search grounding |
-| **OpenRouter** | [openrouter.ai](https://openrouter.ai) | 17+ free models as fallback |
-| **Tavily** | [app.tavily.com](https://app.tavily.com) | Web search (1,000/month free) |
-| **Cloudflare** | [dash.cloudflare.com](https://dash.cloudflare.com) | FLUX.2 image gen + R2 storage |
+| **Groq** | [console.groq.com](https://console.groq.com) | GPT-OSS 120B, Llama 3.3, Qwen 3 — fastest inference |
 
 ### 3. Configure
 
 ```bash
 cp .env.example .env.local
-# Edit .env.local with your keys
+```
+
+Set these 3 variables in `.env.local`:
+
+```
+NEXT_PUBLIC_SUPABASE_URL="https://YOUR_PROJECT.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
+GROQ_API_KEY="gsk_your_key_here"
 ```
 
 ### 4. Set up the database
@@ -126,7 +129,46 @@ Run the SQL in `supabase/migrations/001_sarmalink_ai.sql` in your Supabase SQL e
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000). You'll have a fully working chat with Fast and Smart modes via Groq.
+
+---
+
+## Full Setup (all 7 providers)
+
+Adding more providers unlocks all 36 engines, 6 modes, and 14-step failover. Every provider below is free with no credit card.
+
+| Provider | Sign up | What it unlocks |
+|---|---|---|
+| **SambaNova** | [cloud.sambanova.ai](https://cloud.sambanova.ai) | DeepSeek V3.2 (685B) — primary Smart/Reasoner/Coder engine |
+| **Cerebras** | [cloud.cerebras.ai](https://cloud.cerebras.ai) | 2,000 tok/sec inference — Fast mode fallback |
+| **Google Gemini** | [aistudio.google.com](https://aistudio.google.com/app/apikey) | Live web search grounding — Live mode |
+| **OpenRouter** | [openrouter.ai](https://openrouter.ai) | 17+ free models — ultimate failover safety net |
+| **Tavily** | [app.tavily.com](https://app.tavily.com) | Web search (1,000/month) — container tracking, research |
+| **Cloudflare** | [dash.cloudflare.com](https://dash.cloudflare.com) | FLUX.2 image gen + R2 file storage |
+
+Add each key to `.env.local` — see `.env.example` for the full list. The failover architecture automatically picks up any configured provider.
+
+> **Deep dive:** See the [Complete Setup Guide](https://github.com/sarmakska/sarmalink-ai/wiki/Complete-Setup-Guide) in the wiki for step-by-step instructions, database schema setup, and deployment to Vercel.
+
+---
+
+## Documentation
+
+| Resource | Description |
+|---|---|
+| **[Wiki](https://github.com/sarmakska/sarmalink-ai/wiki)** | 22-page knowledge base — setup guides, architecture, provider signup walkthroughs |
+| **[Complete Setup Guide](https://github.com/sarmakska/sarmalink-ai/wiki/Complete-Setup-Guide)** | Step-by-step from zero to production |
+| **[Architecture Overview](https://github.com/sarmakska/sarmalink-ai/wiki/Architecture-Overview)** | How the failover engine, auto-router, and live tools work |
+| **[How Failover Works](https://github.com/sarmakska/sarmalink-ai/wiki/How-Failover-Works)** | Deep dive into the multi-provider failover logic |
+| **[Environment Variables](https://github.com/sarmakska/sarmalink-ai/wiki/Environment-Variables)** | Every env var explained — required vs optional |
+| **[Database Schema](https://github.com/sarmakska/sarmalink-ai/wiki/Database-Schema)** | Tables, RLS policies, and migration files |
+| **[Adding a New Provider](https://github.com/sarmakska/sarmalink-ai/wiki/Adding-a-New-Provider)** | How to integrate any OpenAI-compatible API |
+| **[Adding a New Live Tool](https://github.com/sarmakska/sarmalink-ai/wiki/Adding-a-New-Live-Tool)** | Build and register custom real-time tools |
+| **[Deploying to Vercel](https://github.com/sarmakska/sarmalink-ai/wiki/Deploying-to-Vercel)** | Production deployment checklist |
+| **[Security & Prompt Injection](https://github.com/sarmakska/sarmalink-ai/wiki/Security-and-Prompt-Injection)** | How user content is sandboxed |
+| **[FAQ](https://github.com/sarmakska/sarmalink-ai/wiki/FAQ)** | Common questions and troubleshooting |
+
+Engineering docs are also available in the [`docs/`](docs/) folder: architecture, DB schema, env matrix, failure modes, and deployment guides.
 
 ---
 
