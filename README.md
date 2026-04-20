@@ -175,6 +175,8 @@ Add each key to `.env.local` — see `.env.example` for the full list. The failo
 
 | Resource | Description |
 |---|---|
+| **[How It Works](https://sarmalinux.com/products/sarmalink-ai/how-it-works)** | Complete technical breakdown — failover, tech choices, vs alternatives |
+| **[How It Works (GitHub)](docs/HOW-IT-WORKS.md)** | Same content as markdown in the repo |
 | **[Wiki](https://github.com/sarmakska/sarmalink-ai/wiki)** | 22-page knowledge base — setup guides, architecture, provider signup walkthroughs |
 | **[Complete Setup Guide](https://github.com/sarmakska/sarmalink-ai/wiki/Complete-Setup-Guide)** | Step-by-step from zero to production |
 | **[Architecture Overview](https://github.com/sarmakska/sarmalink-ai/wiki/Architecture-Overview)** | How the failover engine, auto-router, and live tools work |
