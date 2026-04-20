@@ -29,6 +29,10 @@ export function providerEndpoint(provider: ProviderType): string | null {
         case 'sambanova': return 'https://api.sambanova.ai/v1/chat/completions'
         case 'openrouter':
         case 'openrouter-free': return 'https://openrouter.ai/api/v1/chat/completions'
+        case 'github-models': return 'https://models.inference.ai.azure.com/chat/completions'
+        case 'cohere': return 'https://api.cohere.com/compatibility/v1/chat/completions'
+        case 'mistral': return 'https://api.mistral.ai/v1/chat/completions'
+        case 'ollama': return `${process.env.OLLAMA_URL || 'http://localhost:11434'}/v1/chat/completions`
         default: return null
     }
 }
@@ -47,6 +51,12 @@ export function providerKeys(provider: ProviderType): string[] {
         case 'gemini-grounded': return e.providers.gemini
         case 'openrouter':
         case 'openrouter-free': return e.providers.openrouter
+        case 'github-models': return e.providers.githubModels
+        case 'cohere': return e.providers.cohere
+        case 'mistral': return e.providers.mistral
+        // Ollama runs locally without auth — 'local' is a sentinel string so the
+        // failover runner treats it as a valid configured key when OLLAMA_URL is set.
+        case 'ollama': return e.providers.ollama
         default: return []
     }
 }

@@ -1,0 +1,13 @@
+-- Seed file for local `supabase db reset`.
+--
+-- This runs AFTER every migration in supabase/migrations/ has been applied.
+-- Put any demo rows you want on every fresh local DB here — default models,
+-- feature flags, fixture users, etc.
+--
+-- Leave empty if you want a pristine schema. SarmaLink-AI does not ship
+-- any seed data by default because all state is user-scoped and created on
+-- first login via row-level-security.
+
+-- Example (uncomment to use):
+-- INSERT INTO public.ai_events (user_id, event_type, backend, model_id, status)
+-- VALUES ('00000000-0000-0000-0000-000000000000', 'message', 'Seed Demo', 'smart', '200');

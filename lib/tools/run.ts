@@ -9,16 +9,27 @@
 import { TOOLS, type ToolResult } from './registry'
 import { wrapToolResult } from '@/lib/prompts/sanitize'
 
+export interface ToolRunOptions {
+    /**
+     * Optional failure sink. Called whenever a tool throws or returns empty.
+     * The orchestrator wires this to the ai_events logger so the Admin Health
+     * endpoint can surface broken tools (revoked Tavily key, Open-Meteo outage,
+     * etc.) instead of hiding them behind a silent `catch`.
+     */
+    onFailure?: (e: { tool: string; label: string; reason: 'error' | 'empty_output'; message?: string }) => void
+}
+
 /**
  * Run all tools whose `detect()` returns non-null for this message.
  * Returns an array of results in registry order. Callers should
  * concatenate these onto the user message before the failover fires.
  *
- * Errors in individual tools are swallowed — a broken tool must never
- * block the chat request. The event is dropped silently; if observability
- * matters, add logging here.
+ * Tool failures never block the chat request, but they are now reported
+ * through `onFailure` (when provided) so operators can see a revoked API key
+ * or upstream outage in the health dashboard. A `console.error` also fires
+ * unconditionally so at minimum the failure shows up in server logs.
  */
-export async function runTools(message: string): Promise<ToolResult[]> {
+export async function runTools(message: string, opts: ToolRunOptions = {}): Promise<ToolResult[]> {
     const results: ToolResult[] = []
 
     for (const tool of TOOLS) {
@@ -27,15 +38,21 @@ export async function runTools(message: string): Promise<ToolResult[]> {
             if (args === null) continue
 
             const rawOutput = await tool.execute(args)
-            if (!rawOutput) continue
+            if (!rawOutput) {
+                console.error(`[tools] ${tool.name} returned empty output`)
+                opts.onFailure?.({ tool: tool.name, label: tool.label, reason: 'empty_output' })
+                continue
+            }
 
             results.push({
                 tool: tool.name,
                 label: tool.label,
                 output: wrapToolResult(tool.label, rawOutput),
             })
-        } catch {
-            // Tool failure must never block the request.
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message.slice(0, 300) : 'unknown error'
+            console.error(`[tools] ${tool.name} failed: ${msg}`)
+            opts.onFailure?.({ tool: tool.name, label: tool.label, reason: 'error', message: msg })
             continue
         }
     }

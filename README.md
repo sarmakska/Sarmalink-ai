@@ -15,15 +15,19 @@
 [![Fastest Response](https://img.shields.io/badge/Fastest-41ms-brightgreen)](#the-6-modes)
 [![DeepSeek V3.2](https://img.shields.io/badge/Primary-DeepSeek_V3.2_(685B)-purple)](#the-6-modes)
 
-**An open-source, multi-provider AI assistant with automatic failover.**
+**An open-source, multi-provider AI backend with automatic failover.**
 
 Built by [Sarma Linux](https://sarmalinux.com) — 17 months of development, open-sourced for everyone.
+
+> 🚀 **v1.1.0 shipped on 2026-04-20** — OpenAI-compatible proxy at `/api/v1/chat/completions`, four new free-tier providers (GitHub Models · Cohere · Mistral · Ollama local fallback), per-step fallback metrics, 110 tests green. See [CHANGELOG.md](CHANGELOG.md) for the full list and [docs/OPEN-ISSUES.md](docs/OPEN-ISSUES.md) for what's open for contributors.
+
+> **What this repo is:** a headless Next.js **backend** — the failover engine, auto-router, live tools, Supabase schema, and REST/SSE API (`/api/ai-chat`). It is **not** a drop-in ChatGPT clone UI. If you want the full hosted product with dark mode, markdown rendering, and thinking traces, see [sarmalinux.com/products/sarmalink-ai](https://sarmalinux.com/products/sarmalink-ai). To build your own UI on top, point any chat client at the SSE endpoint — see [docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md) for the streaming protocol.
 
 ---
 
 ## What is SarmaLink-AI?
 
-SarmaLink-AI is a production-ready AI chat assistant that routes every message through a **failover** of AI engines. If one engine is busy, the next fires in under 50 milliseconds. Users never see errors — they always get an answer.
+SarmaLink-AI is a production-ready AI chat backend that routes every message through a **failover** of AI engines. If one engine is busy, the next fires in under 50 milliseconds. Users never see errors — they always get an answer.
 
 - **36 AI engines** across 7 providers (Groq, SambaNova, Cerebras, Google Gemini, OpenRouter, Cloudflare, Tavily)
 - **Smart auto-routing** — detects whether you're asking for code, web search, quick answers, or deep reasoning, and picks the right model automatically
@@ -32,7 +36,7 @@ SarmaLink-AI is a production-ready AI chat assistant that routes every message t
 - **Persistent memory** — learns who you are across conversations (like ChatGPT memory)
 - **Document analysis** — upload PDFs, Excel, Word files (up to 10 at once)
 - **50 saved conversations** per user, oldest auto-deleted
-- **Dark & light mode**, markdown rendering, code highlighting, thinking traces
+- **SSE streaming API** with separate `token` and `thinking` event types — bring your own UI, or consume from any HTTP client
 
 **Total cost: the providers' free tiers. No credit card needed for any of them.**
 
@@ -231,6 +235,47 @@ SarmaLink-AI is built on the generous free tiers of these incredible platforms. 
 - **[European Central Bank / Frankfurter](https://frankfurter.app)** — For real-time exchange rate data, free forever, no key needed.
 
 Without these teams, SarmaLink-AI would cost thousands per month. Instead, it costs nothing.
+
+---
+
+## Build on this
+
+This is a backend. You're invited to build on top of it. Some ideas that are fully open for contributors — grab an issue or open a PR:
+
+- **Reference UI** — a clean Next.js chat UI in `/examples/ui` that consumes `/api/ai-chat` SSE. Start with the markdown renderer + thinking-block toggle.
+- **Discord/Slack bot** — wrap the SSE endpoint in a bot. The failover engine already handles rate limits, so you just stream tokens into a message.
+- **CLI client** — `npx sarmalink-chat "hello"` that streams a response from your deployment.
+- **Python / Go / Rust SDK** — a thin client for the `/api/ai-chat` contract. The protocol is documented in [docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md).
+- **New providers** — Mistral, Anthropic, Together, Fireworks, DeepInfra. Adding a provider is ~10 lines (see [CONTRIBUTING.md](CONTRIBUTING.md#adding-a-new-ai-provider)).
+- **New live tools** — stock prices, flight status, package tracking, calendar, email search. The tool-calling loop is already wired.
+- **Config-driven models** — move `lib/ai-models.ts` definitions to `models.yaml` or a Supabase `models` table so operators can tune failover without editing TypeScript.
+- **Admin dashboard UI** — `/api/admin/health` already returns per-provider stats, dead-model detection, and 24h latency. Build the React page that reads it.
+- **Supabase CLI migration** — `supabase/config.toml` is shipped (run `npx supabase db push`), but a seed script with a demo user would make first-boot even smoother.
+
+See [`good first issue`](https://github.com/sarmakska/sarmalink-ai/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) and [`help wanted`](https://github.com/sarmakska/sarmalink-ai/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) on the issue tracker.
+
+---
+
+## OpenAI-compatible proxy
+
+SarmaLink-AI can expose its failover engine at `/api/v1/chat/completions` using the OpenAI chat-completions JSON contract. That means any tool that already speaks OpenAI — Cursor, VS Code AI plugins, AnythingLLM, LangChain, LlamaIndex, the official `openai` Python/Node SDKs — can be pointed at your SarmaLink deployment as a drop-in replacement for `api.openai.com`.
+
+**Opt-in:** set `ENABLE_OPENAI_PROXY=true` in your environment. When unset, the route returns 404.
+
+**Example (streaming):**
+
+```bash
+curl https://your-deploy.vercel.app/api/v1/chat/completions \
+  -H "Authorization: Bearer any-token" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gpt-4o","messages":[{"role":"user","content":"hi"}],"stream":true}'
+```
+
+**Model mapping:** the `model` field in the request is mapped to a SarmaLink mode based on keyword heuristics — `gpt-4o` / `claude` → Smart, `o1` / `o3-mini` / `deepseek-reasoner` → Reasoner, `codestral` / `qwen-coder` → Coder, `pixtral` / `llama-scout` → Vision, `gemini-flash` / `gpt-4o-mini` / `llama-8b` → Fast. The original model string you sent is echoed back in every response chunk so clients stay happy.
+
+**Who uses this:** point Cursor's "Override OpenAI base URL" at `https://your-deploy.vercel.app/api/v1`, or paste the same URL into AnythingLLM's custom OpenAI endpoint field. Any non-empty bearer token is accepted.
+
+**Security warning:** the endpoint trusts any bearer token. Protect it with a firewall, a reverse proxy (Cloudflare Access, Tailscale, nginx `auth_basic`), or simply leave `ENABLE_OPENAI_PROXY` unset in production if this concerns you. There is no per-user quota on this route — it's designed for personal/team use of your own deployment.
 
 ---
 

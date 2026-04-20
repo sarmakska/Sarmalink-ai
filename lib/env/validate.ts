@@ -18,6 +18,10 @@ export interface EnvConfig {
         sambanova: string[]
         gemini: string[]
         openrouter: string[]
+        githubModels: string[]
+        cohere: string[]
+        mistral: string[]
+        ollama: string[]
         tavily: string[]
         cloudflare: { accountId: string; token: string }[]
     }
@@ -74,6 +78,10 @@ export function loadEnv(): EnvConfig {
             ...collectKeys('GEMINI_CHATBOT_KEY', 6),
         ],
         openrouter: collectKeys('OPENROUTER_API_KEY', 5),
+        githubModels: collectKeys('GITHUB_MODELS_TOKEN', 4),
+        cohere: collectKeys('COHERE_API_KEY', 4),
+        mistral: collectKeys('MISTRAL_API_KEY', 4),
+        ollama: process.env.OLLAMA_URL ? ['local'] : [],
         tavily: collectKeys('TAVILY_API_KEY', 8),
         cloudflare: collectCloudflarePairs(),
     }
@@ -83,7 +91,11 @@ export function loadEnv(): EnvConfig {
         providers.cerebras.length +
         providers.sambanova.length +
         providers.gemini.length +
-        providers.openrouter.length
+        providers.openrouter.length +
+        providers.githubModels.length +
+        providers.cohere.length +
+        providers.mistral.length +
+        providers.ollama.length
 
     // In production, warn (don't throw) if no providers configured — allows
     // the landing page to render without any keys set.

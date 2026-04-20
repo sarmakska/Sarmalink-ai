@@ -1,0 +1,29 @@
+name: New live tool
+description: Propose a new real-time tool (stock prices, flight status, package tracking, etc.).
+title: "feat(tools): add <tool>"
+labels: ["enhancement", "tools", "good first issue"]
+body:
+  - type: input
+    id: tool
+    attributes:
+      label: Tool name
+      placeholder: "Stock price lookup"
+    validations:
+      required: true
+  - type: input
+    id: trigger
+    attributes:
+      label: What phrases should trigger it?
+      placeholder: '"price of AAPL", "MSFT stock"'
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Data source
+      placeholder: "Alpha Vantage / Yahoo Finance / etc. — prefer free+keyless"
+  - type: textarea
+    id: sample
+    attributes:
+      label: Sample output
+      render: markdown

@@ -17,6 +17,10 @@ export type ProviderType =
   | "gemini-grounded"
   | "openrouter"
   | "openrouter-free"
+  | "github-models"
+  | "cohere"
+  | "mistral"
+  | "ollama"
 
 export interface FailoverStep {
   provider: ProviderType
@@ -77,8 +81,10 @@ export const MODELS: Record<ModelId, ModelDefinition> = {
     // → SambaNova Llama-4-Maverick → Groq Llama 3.3 70B → deep :free fallback pool.
     failover: [
       { provider: "sambanova", model: "DeepSeek-V3.2", label: "SambaNova DeepSeek V3.2" },
+      { provider: "cohere", model: "command-r-plus-08-2024", label: "Cohere Command R+" },
       { provider: "groq", model: "openai/gpt-oss-120b", label: "Groq GPT-OSS 120B" },
       { provider: "sambanova", model: "Llama-4-Maverick-17B-128E-Instruct", label: "SambaNova Llama 4 Maverick" },
+      { provider: "github-models", model: "gpt-4o", label: "GitHub GPT-4o" },
       { provider: "sambanova", model: "DeepSeek-V3.1", label: "SambaNova DeepSeek V3.1" },
       { provider: "groq", model: "llama-3.3-70b-versatile", label: "Groq Llama 3.3 70B" },
       { provider: "sambanova", model: "Meta-Llama-3.3-70B-Instruct", label: "SambaNova Llama 3.3 70B" },
@@ -90,6 +96,7 @@ export const MODELS: Record<ModelId, ModelDefinition> = {
       { provider: "openrouter-free", model: "nvidia/nemotron-3-nano-30b-a3b:free", label: "OpenRouter Nemotron Nano 30B (free)" },
       { provider: "openrouter-free", model: "arcee-ai/trinity-large-preview:free", label: "OpenRouter Arcee Trinity (free)" },
       { provider: "openrouter-free", model: "google/gemma-3-12b-it:free", label: "OpenRouter Gemma 3 12B (free)" },
+      { provider: "ollama", model: "llama3.1:8b", label: "Local Ollama" },
     ],
   },
   reasoner: {
@@ -106,6 +113,7 @@ export const MODELS: Record<ModelId, ModelDefinition> = {
     perUserDailyLimit: 500,
     totalDailyCapacity: 5000,
     failover: [
+      { provider: "github-models", model: "o3-mini", label: "GitHub o3-mini" },
       { provider: "sambanova", model: "DeepSeek-V3.2", label: "SambaNova DeepSeek V3.2" },
       { provider: "sambanova", model: "DeepSeek-V3.1", label: "SambaNova DeepSeek V3.1" },
       { provider: "groq", model: "openai/gpt-oss-120b", label: "Groq GPT-OSS 120B" },
@@ -116,6 +124,7 @@ export const MODELS: Record<ModelId, ModelDefinition> = {
       { provider: "openrouter-free", model: "openai/gpt-oss-120b:free", label: "OpenRouter GPT-OSS 120B (free)" },
       { provider: "openrouter-free", model: "z-ai/glm-4.5-air:free", label: "OpenRouter GLM-4.5 Air (free)" },
       { provider: "openrouter-free", model: "nvidia/nemotron-3-super-120b-a12b:free", label: "OpenRouter Nemotron 120B (free)" },
+      { provider: "ollama", model: "llama3.1:8b", label: "Local Ollama" },
     ],
   },
   live: {
@@ -133,9 +142,11 @@ export const MODELS: Record<ModelId, ModelDefinition> = {
     totalDailyCapacity: 10000,
     failover: [
       { provider: "gemini-grounded", model: "gemini-2.5-flash", label: "Gemini 2.5 Flash + Google Search" },
+      { provider: "cohere", model: "command-r-plus-08-2024", label: "Cohere Command R+" },
       { provider: "gemini-grounded", model: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite + Google Search" },
       { provider: "gemini-grounded", model: "gemini-3-flash-preview", label: "Gemini 3 Flash + Google Search" },
       { provider: "groq", model: "openai/gpt-oss-120b", label: "Groq GPT-OSS 120B + Tavily search" },
+      { provider: "ollama", model: "llama3.1:8b", label: "Local Ollama" },
     ],
   },
   fast: {
@@ -155,12 +166,14 @@ export const MODELS: Record<ModelId, ModelDefinition> = {
       { provider: "groq", model: "openai/gpt-oss-20b", label: "Groq GPT-OSS 20B (41ms)" },
       { provider: "groq", model: "llama-3.1-8b-instant", label: "Groq Llama 3.1 8B Instant" },
       { provider: "cerebras", model: "llama3.1-8b", label: "Cerebras Llama 3.1 8B (2000 tok/sec)" },
+      { provider: "github-models", model: "gpt-4o-mini", label: "GitHub GPT-4o-mini" },
       { provider: "openrouter-free", model: "nvidia/nemotron-nano-9b-v2:free", label: "OpenRouter Nemotron Nano 9B (free)" },
       { provider: "openrouter-free", model: "liquid/lfm-2.5-1.2b-thinking:free", label: "OpenRouter Liquid LFM 2.5 (free)" },
       { provider: "openrouter-free", model: "openai/gpt-oss-20b:free", label: "OpenRouter GPT-OSS 20B (free)" },
       { provider: "openrouter-free", model: "google/gemma-3-4b-it:free", label: "OpenRouter Gemma 3 4B (free)" },
       { provider: "openrouter-free", model: "google/gemma-3n-e4b-it:free", label: "OpenRouter Gemma 3n 4B (free)" },
       { provider: "openrouter-free", model: "google/gemma-3n-e2b-it:free", label: "OpenRouter Gemma 3n 2B (free)" },
+      { provider: "ollama", model: "llama3.1:8b", label: "Local Ollama" },
     ],
   },
   vision: {
@@ -178,6 +191,7 @@ export const MODELS: Record<ModelId, ModelDefinition> = {
     failover: [
       { provider: "groq", model: "meta-llama/llama-4-scout-17b-16e-instruct", label: "Groq Llama-4-Scout 17B" },
       { provider: "gemini-grounded", model: "gemini-2.5-flash", label: "Gemini 2.5 Flash (vision)" },
+      { provider: "mistral", model: "pixtral-12b-2409", label: "Mistral Pixtral-12B" },
       { provider: "openrouter-free", model: "google/gemma-4-31b-it:free", label: "OpenRouter Gemma 4 31B (free)" },
       { provider: "openrouter-free", model: "google/gemma-4-26b-a4b-it:free", label: "OpenRouter Gemma 4 26B (free)" },
       { provider: "openrouter-free", model: "nvidia/nemotron-nano-12b-v2-vl:free", label: "OpenRouter Nemotron Nano VL (free)" },
@@ -198,8 +212,10 @@ export const MODELS: Record<ModelId, ModelDefinition> = {
     perUserDailyLimit: 800,
     totalDailyCapacity: 8000,
     failover: [
+      { provider: "github-models", model: "o3-mini", label: "GitHub o3-mini" },
       { provider: "sambanova", model: "DeepSeek-V3.2", label: "SambaNova DeepSeek V3.2 (code)" },
       { provider: "groq", model: "openai/gpt-oss-120b", label: "Groq GPT-OSS 120B" },
+      { provider: "mistral", model: "codestral-latest", label: "Mistral Codestral" },
       { provider: "cerebras", model: "qwen-3-235b-a22b-instruct-2507", label: "Cerebras Qwen 3 235B (code)" },
       { provider: "sambanova", model: "DeepSeek-V3.1", label: "SambaNova DeepSeek V3.1 (code)" },
       { provider: "groq", model: "qwen/qwen3-32b", label: "Groq Qwen 3 32B" },
@@ -207,6 +223,7 @@ export const MODELS: Record<ModelId, ModelDefinition> = {
       { provider: "openrouter-free", model: "openai/gpt-oss-120b:free", label: "OpenRouter GPT-OSS 120B (free)" },
       { provider: "openrouter-free", model: "qwen/qwen3-coder:free", label: "OpenRouter Qwen3 Coder (free)" },
       { provider: "openrouter-free", model: "arcee-ai/trinity-large-preview:free", label: "OpenRouter Arcee Trinity (free)" },
+      { provider: "ollama", model: "qwen2.5-coder:7b", label: "Local Ollama" },
     ],
   },
 }

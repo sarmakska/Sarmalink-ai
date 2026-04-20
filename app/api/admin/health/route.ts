@@ -21,7 +21,8 @@ import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { env } from '@/lib/env/validate'
 import { providerAvailable } from '@/lib/providers/registry'
-import type { ProviderType } from '@/lib/ai-models'
+import { MODELS } from '@/lib/ai-models'
+import type { ProviderType, ModelId } from '@/lib/ai-models'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,6 +38,20 @@ interface ProviderStats {
         successRate: number
         medianLatencyMs: number | null
     }
+}
+
+interface StepWinner {
+    backendLabel: string
+    wins: number
+    percentage: number
+}
+
+interface FallbackUsage {
+    modelId: string
+    totalSuccesses: number
+    stepWinners: StepWinner[]
+    failureRate: number
+    stepDepthHistogram: { step1: number; step2to3: number; step4plus: number }
 }
 
 export async function GET() {
@@ -61,10 +76,11 @@ export async function GET() {
 
     const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString()
 
-    // Pull last 24h of events
+    // Pull last 24h of events — include model_id so we can build per-mode
+    // fallback usage stats below.
     const { data: rawEvents } = await supabaseAdmin
         .from('ai_events')
-        .select('backend, event_type, latency_ms')
+        .select('backend, event_type, latency_ms, model_id')
         .gte('created_at', since)
 
     const events = rawEvents ?? []
@@ -127,11 +143,81 @@ export async function GET() {
         if (s.success === 0 && s.error > 3) deadModels.push(backend)
     }
 
+    /**
+     * fallbackUsage — per user-facing mode (smart/coder/reasoner/…) this
+     * summarises how deep the failover chain had to go in the last 24h.
+     *
+     * For each mode we count successful responses (event_type='message'),
+     * group by the winning backend label, and map that label back to its
+     * position in MODELS[mode].failover so we can bucket winners into
+     * step1 / step2to3 / step4plus. A backend that isn't in the configured
+     * failover list falls into step4plus (it was likely introduced by the
+     * Auto router at runtime, or the config was edited after the event was
+     * logged).
+     *
+     * How to read it: if step1 stays close to totalSuccesses, your primary
+     * provider is healthy. If step2to3 or step4plus grows, primaries are
+     * being skipped (rate-limited, erroring, or dead) and the failover is
+     * quietly saving your users. Rising failureRate means even the full
+     * chain is exhausting — time to add more providers or keys.
+     */
+    const modeIds = Object.keys(MODELS) as ModelId[]
+    const fallbackUsage: FallbackUsage[] = modeIds.map(modeId => {
+        const modeEvents = events.filter(ev => ev.model_id === modeId)
+        const successes = modeEvents.filter(ev => ev.event_type === 'message')
+        const failures = modeEvents.filter(ev => ev.event_type === 'error').length
+        const totalSuccesses = successes.length
+
+        const winCounts = new Map<string, number>()
+        for (const ev of successes) {
+            if (!ev.backend) continue
+            winCounts.set(ev.backend, (winCounts.get(ev.backend) ?? 0) + 1)
+        }
+
+        const stepWinners: StepWinner[] = Array.from(winCounts.entries())
+            .map(([backendLabel, wins]) => ({
+                backendLabel,
+                wins,
+                percentage: totalSuccesses > 0
+                    ? Math.round((wins / totalSuccesses) * 1000) / 10
+                    : 0,
+            }))
+            .sort((a, b) => b.wins - a.wins)
+
+        const failover = MODELS[modeId].failover
+        const indexOf = (label: string) =>
+            failover.findIndex(step => step.label === label)
+
+        const histogram = { step1: 0, step2to3: 0, step4plus: 0 }
+        for (const [label, wins] of winCounts) {
+            const idx = indexOf(label)
+            if (idx === 0) histogram.step1 += wins
+            else if (idx === 1 || idx === 2) histogram.step2to3 += wins
+            else histogram.step4plus += wins
+        }
+
+        // Failure rate — error events vs successful messages for this mode.
+        // A denominator of 0 means no traffic at all; report 0 rather than NaN.
+        const denominator = totalSuccesses + failures
+        const failureRate = denominator > 0
+            ? Math.round((failures / denominator) * 1000) / 10
+            : 0
+
+        return {
+            modelId: modeId,
+            totalSuccesses,
+            stepWinners,
+            failureRate,
+            stepDepthHistogram: histogram,
+        }
+    })
+
     return NextResponse.json({
         ok: true,
         timestamp: new Date().toISOString(),
         providers: stats,
         deadModels,
+        fallbackUsage,
         summary: {
             providersConfigured: stats.filter(s => s.configured).length,
             providersTotal: stats.length,

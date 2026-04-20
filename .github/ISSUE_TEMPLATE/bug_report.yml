@@ -1,0 +1,62 @@
+name: Bug report
+description: Something in SarmaLink-AI is broken or behaves unexpectedly.
+title: "bug: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. Please give us enough to reproduce it.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Concise description of the bug.
+      placeholder: "When I send a long message with an attachment, the stream stalls after ~30s."
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Deploy with GROQ_API_KEY only
+        2. Send message X with attachment Y
+        3. Observe …
+    validations:
+      required: true
+  - type: input
+    id: expected
+    attributes:
+      label: Expected behaviour
+  - type: input
+    id: actual
+    attributes:
+      label: Actual behaviour
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where does this happen?
+      options:
+        - Local dev (npm run dev)
+        - Self-hosted Vercel
+        - Self-hosted non-Vercel
+        - Other (describe)
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Please **sanitise any API keys** before pasting.
+      render: shell
+  - type: input
+    id: node
+    attributes:
+      label: Node version
+      placeholder: "v20.10.0"
+  - type: input
+    id: commit
+    attributes:
+      label: Commit or release
+      placeholder: "main @ 78588f3"

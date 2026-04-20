@@ -260,7 +260,20 @@ export async function orchestrateChat(
     ]
 
     // ── Live data tools ─────────────────────────────────────────────────
-    const toolResults = await runTools(message ?? '')
+    // Tool failures no longer die silently: every error routes through
+    // logEvent() so the /api/admin/health endpoint can surface revoked
+    // keys and upstream outages.
+    const toolResults = await runTools(message ?? '', {
+        onFailure: ({ tool, label, reason, message: errMsg }) => {
+            logEvent({
+                user_id: userId,
+                event_type: 'error',
+                backend: `tool:${tool}`,
+                status: reason,
+                meta: { label, error: errMsg },
+            }).catch(() => { /* logging must never throw */ })
+        },
+    })
     const toolData = formatToolResults(toolResults)
     if (toolData) {
         const lastIdx = messages.length - 1

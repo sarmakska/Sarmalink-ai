@@ -1,0 +1,41 @@
+name: New AI provider
+description: Add a new LLM provider to the failover engine (e.g. Mistral, Anthropic, Together).
+title: "feat(providers): add <provider>"
+labels: ["enhancement", "providers", "good first issue"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        SarmaLink-AI is designed so that adding an OpenAI-compatible provider takes ~10 lines of code.
+        See the [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md#adding-a-new-ai-provider) guide.
+  - type: input
+    id: provider
+    attributes:
+      label: Provider name
+      placeholder: "Mistral / Together / Fireworks / DeepInfra / Anthropic"
+    validations:
+      required: true
+  - type: input
+    id: endpoint
+    attributes:
+      label: Chat completions endpoint
+      placeholder: "https://api.mistral.ai/v1/chat/completions"
+    validations:
+      required: true
+  - type: input
+    id: models
+    attributes:
+      label: Models to expose
+      placeholder: "mistral-large-latest, codestral-latest"
+  - type: input
+    id: freetier
+    attributes:
+      label: Does it have a free tier?
+      placeholder: "Yes, 1M tokens/month"
+  - type: checkboxes
+    id: offer
+    attributes:
+      label: Are you opening a PR for this?
+      options:
+        - label: Yes, I'll open the PR
+        - label: Requesting someone else picks this up

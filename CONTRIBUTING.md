@@ -2,6 +2,10 @@
 
 Thanks for wanting to contribute. Here's how.
 
+## First-time contributors — start here
+
+👉 **[`docs/OPEN-ISSUES.md`](docs/OPEN-ISSUES.md)** lists every open, well-scoped task with acceptance criteria. That's the fastest path from clone to merged PR. Items labelled `good first issue` are sized for a day of focused work.
+
 ## Development setup
 
 ```bash

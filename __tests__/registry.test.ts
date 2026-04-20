@@ -25,6 +25,25 @@ describe('providerEndpoint', () => {
     it('returns null for gemini-grounded (handled separately)', () => {
         expect(providerEndpoint('gemini-grounded')).toBe(null)
     })
+
+    it('returns the correct URL for github-models (no /v1/ path)', () => {
+        expect(providerEndpoint('github-models')).toBe('https://models.inference.ai.azure.com/chat/completions')
+    })
+
+    it('returns the correct URL for cohere (OpenAI-compat shim)', () => {
+        expect(providerEndpoint('cohere')).toBe('https://api.cohere.com/compatibility/v1/chat/completions')
+    })
+
+    it('returns the correct URL for mistral', () => {
+        expect(providerEndpoint('mistral')).toBe('https://api.mistral.ai/v1/chat/completions')
+    })
+
+    it('returns a localhost URL for ollama when OLLAMA_URL is unset', () => {
+        const prev = process.env.OLLAMA_URL
+        delete process.env.OLLAMA_URL
+        expect(providerEndpoint('ollama')).toBe('http://localhost:11434/v1/chat/completions')
+        if (prev !== undefined) process.env.OLLAMA_URL = prev
+    })
 })
 
 describe('providerHeaders', () => {

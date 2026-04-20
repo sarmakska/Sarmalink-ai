@@ -11,3 +11,7 @@ Thumbs.db
 
 # Private developer docs — never committed to public repo
 _archive/
+
+# Local tooling and test output — not part of the source tree
+.claude/
+coverage/
