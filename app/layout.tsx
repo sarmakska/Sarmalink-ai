@@ -9,7 +9,17 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <nav style={{
+          position: 'fixed', top: 0, right: 0, zIndex: 100,
+          padding: '10px 20px', fontSize: 12, display: 'flex', gap: 16, alignItems: 'center',
+        }}>
+          <a href="/docs" style={{ color: '#6b7280', textDecoration: 'none', fontFamily: 'system-ui, sans-serif' }}>
+            Docs
+          </a>
+        </nav>
+        {children}
+      </body>
     </html>
   )
 }
