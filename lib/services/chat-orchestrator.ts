@@ -17,6 +17,7 @@ import { getUserMemories } from '@/lib/repositories/memories'
 import { wrapMemories } from '@/lib/prompts/sanitize'
 import { runTools, formatToolResults } from '@/lib/tools/run'
 import { logEvent } from './event-logger'
+import { tryPluginAutoRoute } from './plugin-autorouter'
 import { resolveIntent, detectImageIntent, detectSearchIntent, buildImagePromptFromContext } from './intent-router'
 import { extractAttachments, buildFileMessage } from './attachment-extractor'
 import { checkQuota, incrementQuota } from './quota-service'
@@ -189,6 +190,28 @@ export async function orchestrateChat(
         hasFiles,
     })
     const selectedModel = getModel(selectedModelId)
+
+    // ── Plugin auto-routing (opt-in via ENABLE_PLUGIN_AUTOROUTE=true) ───
+    // Runs before quota check and LLM path. If a plugin handles the message,
+    // return its response immediately as a plain JSON reply.
+    if (!image && !hasFiles) {
+        const autoRoute = await tryPluginAutoRoute(message ?? '')
+        if (autoRoute.matched) {
+            logEvent({
+                user_id: userId,
+                event_type: 'plugin_autoroute',
+                backend: autoRoute.pluginId,
+                status: 'success',
+                meta: { intent: autoRoute.intent },
+            }).catch(() => { /* non-critical */ })
+            return Response.json({
+                reply: autoRoute.reply,
+                autoRouted: true,
+                pluginId: autoRoute.pluginId,
+                intent: autoRoute.intent,
+            })
+        }
+    }
 
     // ── Provider availability check ───────────────────────────────────
     // If the selected mode requires providers that have zero keys configured,
