@@ -267,4 +267,4 @@ Attribution in your README is appreciated but not required.
 
 - Issues on the upstream repo: https://github.com/sarmakska/Sarmalink-ai/issues
 - Sarma's site: https://sarmalinux.com
-- Manus referral (extra credits): https://manus.im/invitation/REPLACE_WITH_YOUR_CODE
+- Manus referral (extra credits): https://manus.im/invitation/AIRTDVWVEWKCK4R

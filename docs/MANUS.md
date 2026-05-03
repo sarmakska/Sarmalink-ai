@@ -86,7 +86,7 @@ volume. Always set a `budget` so a runaway task is bounded.
 Manus runs on a credit system. New users who sign up via this link get
 500 extra credits on top of the standard free tier:
 
-> **Sign up:** https://manus.im/invitation/REPLACE_WITH_YOUR_CODE
+> **Sign up:** https://manus.im/invitation/AIRTDVWVEWKCK4R
 
 (Replace the URL above with your invite code; the doc keeps a
 recognisable placeholder so it is easy to update without a code search.)

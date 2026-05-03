@@ -203,8 +203,8 @@ Want to ship your own AI gateway under your brand? **Read [`docs/MAKE-IT-YOURS.m
 
 The Manus integration in this repo lets you delegate long-running agentic tasks. New users signing up via this link get **500 extra credits**:
 
-> [Sign up for Manus →](https://manus.im/invitation/REPLACE_WITH_YOUR_CODE)
-> *(Sarma: replace `REPLACE_WITH_YOUR_CODE` in this README and in [`docs/MANUS.md`](docs/MANUS.md) with your actual invite code.)*
+> [Sign up for Manus →](https://manus.im/invitation/AIRTDVWVEWKCK4R)
+> *(Sarma: replace `AIRTDVWVEWKCK4R` in this README and in [`docs/MANUS.md`](docs/MANUS.md) with your actual invite code.)*
 
 ---
 
