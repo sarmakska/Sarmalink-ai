@@ -193,7 +193,18 @@ Add each key to `.env.local` — see `.env.example` for the full list. The failo
 | **[Security & Prompt Injection](https://github.com/sarmakska/sarmalink-ai/wiki/Security-and-Prompt-Injection)** | How user content is sandboxed |
 | **[FAQ](https://github.com/sarmakska/sarmalink-ai/wiki/FAQ)** | Common questions and troubleshooting |
 
-Engineering docs are also available in the [`docs/`](docs/) folder: architecture, DB schema, env matrix, failure modes, and deployment guides.
+Engineering docs are also available in the [`docs/`](docs/) folder: architecture, DB schema, env matrix, failure modes, deployment guides, the [cross-repo plugin system](docs/PLUGINS.md), the [Manus integration](docs/MANUS.md), and the full white-label [**Make It Yours**](docs/MAKE-IT-YOURS.md) guide (fork → v0 front end → Supabase → deploy).
+
+### Make it yours
+
+Want to ship your own AI gateway under your brand? **Read [`docs/MAKE-IT-YOURS.md`](docs/MAKE-IT-YOURS.md)** — it has a copy-paste [v0](https://v0.dev) prompt that generates a complete branded front end (home, pricing, docs, login, signup, dashboard with usage charts and API key CRUD), instructions for swapping logo, colours, and copy, and the full Supabase + Vercel deploy path. Pair it with [terraform-stack](https://github.com/sarmakska/terraform-stack) for one-command reproducibility.
+
+### Try Manus (extra credits)
+
+The Manus integration in this repo lets you delegate long-running agentic tasks. New users signing up via this link get **500 extra credits**:
+
+> [Sign up for Manus →](https://manus.im/invitation/REPLACE_WITH_YOUR_CODE)
+> *(Sarma: replace `REPLACE_WITH_YOUR_CODE` in this README and in [`docs/MANUS.md`](docs/MANUS.md) with your actual invite code.)*
 
 ---
 
