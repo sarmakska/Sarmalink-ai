@@ -7,6 +7,7 @@
  */
 
 import { PLUGIN_REGISTRY, type Plugin, type PluginIntent } from '@/lib/plugins/index'
+import { MANUS_INVITE_URL } from '@/lib/config/manus'
 
 // Map each plugin's endpoint env var so we can surface it in the UI.
 const ENDPOINT_ENV: Record<string, string> = {
@@ -149,6 +150,45 @@ export default function DocsPage() {
         {autoRouteEnabled
           ? 'active — incoming chat messages are scanned for intent keywords before reaching the LLM. Set ENABLE_PLUGIN_AUTOROUTE=false to disable.'
           : 'disabled — set ENABLE_PLUGIN_AUTOROUTE=true to activate keyword-based plugin dispatch.'}
+      </div>
+
+      {/* Manus referral CTA */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)',
+          border: '1px solid #ddd6fe',
+          borderRadius: 8,
+          padding: '14px 16px',
+          marginBottom: 32,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 16,
+          flexWrap: 'wrap',
+        }}
+      >
+        <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.6 }}>
+          <strong>Need a general-purpose AI agent for the long-running tasks?</strong>
+          {' '}Manus pairs well with SarmaLink-AI as the agentic counterpart. New users get
+          {' '}<strong>500 extra credits</strong> on signup.
+        </div>
+        <a
+          href={MANUS_INVITE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            background: '#7c3aed',
+            color: '#fff',
+            padding: '8px 16px',
+            borderRadius: 6,
+            fontSize: 13,
+            fontWeight: 600,
+            textDecoration: 'none',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Try Manus →
+        </a>
       </div>
 
       {/* Plugin list */}

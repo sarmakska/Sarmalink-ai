@@ -258,6 +258,24 @@ You should keep (or you will be rebuilding the backend):
 That split is the point: the backend is the value, the front end is
 where you make it yours.
 
+## Manus referral — override the invite code
+
+This repo ships with a default Manus invite code surfaced in the `/docs`
+page CTA (`AIRTDVWVEWKCK4R`, the upstream maintainer's). When you fork
+and deploy, signups via your `/docs` page will credit the upstream
+maintainer **unless** you override it.
+
+To make your fork's signups credit you instead, set this env var in
+your Vercel project (or `.env.local`):
+
+```
+NEXT_PUBLIC_MANUS_INVITE_CODE=YOUR_OWN_INVITE_CODE
+```
+
+Get your code from https://manus.im once you have an account. The
+constant lives at `lib/config/manus.ts` and is used everywhere a
+"Try Manus" link appears.
+
 ## Licence reminder
 
 MIT. The only requirement is keeping the LICENSE file in your fork.
