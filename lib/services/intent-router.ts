@@ -67,8 +67,8 @@ Categories:
 - fast: simple factual lookups, one-liner questions, quick definitions under 10 words.
 - smart: EVERYTHING ELSE — emails, writing, brainstorming, translation, data extraction from files, creating tables/summaries/reports from uploaded documents, professional tasks. This is the DEFAULT — use smart whenever unsure.
 
-${lastAssistant ? `Prior assistant message (for context):\n"""${lastAssistant.replace(/"/g, '\\"')}"""\n\n` : ''}Latest user message:
-"""${text.replace(/"/g, '\\"')}"""
+${lastAssistant ? `Prior assistant message (for context):\n${JSON.stringify(lastAssistant)}\n\n` : ''}Latest user message:
+${JSON.stringify(text)}
 
 Reply with ONE word only from the 6 categories above.`
 

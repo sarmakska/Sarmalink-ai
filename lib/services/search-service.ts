@@ -46,9 +46,11 @@ async function duckDuckGoSearch(query: string): Promise<string> {
         if (!res.ok) return await ddgInstant(query)
         const html = await res.text()
         const snippets: string[] = []
+        const { decode } = await import('he')
         const matches = html.matchAll(/<a[^>]*class="[^"]*result__snippet[^"]*"[^>]*>([\s\S]*?)<\/a>/g)
         for (const m of matches) {
-            const text = m[1].replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/&gt;/g, '>').replace(/&lt;/g, '<').trim()
+            const stripped = m[1].replace(/<[^>]+>/g, '')
+            const text = decode(stripped).trim()
             if (text) snippets.push(text)
             if (snippets.length >= 5) break
         }
