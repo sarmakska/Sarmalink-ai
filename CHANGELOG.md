@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-05-03
+
+### Added
+- **Cross-repo plugin system** — `lib/plugins/index.ts` registers the 10 sibling open-source repos as routable tools (voice-agent-starter, agent-orchestrator, ai-eval-runner, local-llm-router, mcp-server-toolkit, rag-over-pdf, receipt-scanner, webhook-to-email, k8s-ops-toolkit, terraform-stack). Each plugin is enabled when its endpoint env var is set; no dynamic discovery. See [`docs/PLUGINS.md`](docs/PLUGINS.md).
+- **Intent-based plugin auto-routing** — `lib/services/plugin-autorouter.ts` detects task intent (research / voice / eval / workflow / rag / ocr) from user input pre-LLM and dispatches to the matching plugin endpoint when one is enabled. Gated by `ENABLE_PLUGIN_AUTOROUTE` env (default off). Falls through to the normal LLM path when no plugin matches.
+- **Manus integration** — full client + webhook for [Manus](https://manus.im). Submit long-running browser/research tasks from chat; results stream back in. Real HMAC-SHA256 signature verification on the webhook.
+- **Manus webhook persistence** — `supabase/migrations/002_manus_tasks.sql` schema + `lib/repositories/manus-tasks.ts` repository. Webhook upserts task state into `manus_tasks` table; new `GET /api/v1/manus/tasks/[id]` route serves the persisted record. Forkers apply the migration in their own Supabase project and set `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` in their Vercel env.
+- **`/docs` page** — server-rendered list of all 10 plugins with badges, env-var status, repo links, and a Manus referral CTA. The CTA is on by default and overridable per-deployment via `NEXT_PUBLIC_MANUS_INVITE_CODE`.
+- **`docs/MANUS.md`** — Manus integration guide (env vars, webhook setup, task lifecycle).
+- **`docs/MAKE-IT-YOURS.md`** — full white-label guide. Copy-paste v0 prompt that generates a complete branded front end (home, pricing, docs, login, signup, dashboard with usage charts and API key CRUD), instructions for swapping logo/colours/copy, and the full Supabase + Vercel deploy path. Pairs with [terraform-stack](https://github.com/sarmakska/terraform-stack) for one-command reproducibility.
+
+### Changed
+- README updated with Manus invite link (`AIRTDVWVEWKCK4R`), cross-repo plugin section, and white-label guide pointer. Forkers are explicitly told to swap the invite code for their own — see `docs/MAKE-IT-YOURS.md`.
+- Stale self-TODOs replaced with fork-swap guidance in `MANUS.md` and the white-label guide.
+
 ## [1.1.0] — 2026-04-19
 
 ### Added
