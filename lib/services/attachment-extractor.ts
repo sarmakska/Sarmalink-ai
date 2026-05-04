@@ -50,15 +50,24 @@ async function extractPdf(pdfBase64: string): Promise<string> {
 // ── Excel extract ───────────────────────────────────────────────────────────
 async function extractExcel(base64: string): Promise<string> {
     try {
-        const XLSX = require('xlsx')
+        const ExcelJS = require('exceljs')
         const buffer = Buffer.from(base64, 'base64')
-        const workbook = XLSX.read(buffer, { type: 'buffer' })
+        const workbook = new ExcelJS.Workbook()
+        await workbook.xlsx.load(buffer)
         let result = ''
-        for (const sheetName of workbook.SheetNames) {
-            const sheet = workbook.Sheets[sheetName]
-            const csv = XLSX.utils.sheet_to_csv(sheet)
-            result += `Sheet: ${sheetName}\n${csv}\n\n`
-        }
+        workbook.eachSheet((sheet: any) => {
+            result += `Sheet: ${sheet.name}\n`
+            sheet.eachRow({ includeEmpty: false }, (row: any) => {
+                const values = (row.values as any[]).slice(1).map((v) => {
+                    if (v == null) return ''
+                    if (typeof v === 'object' && 'text' in v) return String(v.text)
+                    if (typeof v === 'object' && 'result' in v) return String(v.result)
+                    return String(v).replace(/"/g, '""')
+                })
+                result += values.map((v) => /[",\n]/.test(v) ? `"${v}"` : v).join(',') + '\n'
+            })
+            result += '\n'
+        })
         return result.slice(0, 15000) || '[Empty spreadsheet]'
     } catch { return '[Could not read this Excel file.]' }
 }
