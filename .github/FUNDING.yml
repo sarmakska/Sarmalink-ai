@@ -1,7 +1,12 @@
-# Donations are redirected to humanitarian and community charities.
+# Donations are redirected to UK and global humanitarian charities.
 # Sarma — sarmalinux.com — does not personally accept sponsorships.
+# Pick whichever cause speaks to you:
+#   1. National Literacy Trust  — education + literacy across the UK
+#   2. The Trussell Trust       — UK foodbank network ending hunger
+#   3. Mind                     — mental health support across England + Wales
+#   4. DEC                      — Disasters Emergency Committee (global humanitarian)
 custom:
+  - https://literacytrust.org.uk/donate
+  - https://www.trussell.org.uk/get-involved/donate
+  - https://www.mind.org.uk/donate
   - https://www.dec.org.uk
-  - https://www.unicef.org.uk
-  - https://www.msf.org.uk
-  - https://www.wateraid.org/uk
