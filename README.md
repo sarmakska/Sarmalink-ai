@@ -15,6 +15,16 @@
 [![Fastest Response](https://img.shields.io/badge/Fastest-41ms-brightgreen)](#the-6-modes)
 [![DeepSeek V3.2](https://img.shields.io/badge/Primary-DeepSeek_V3.2_(685B)-purple)](#the-6-modes)
 
+## Star History
+
+<a href="https://www.star-history.com/#sarmakska/Sarmalink-ai&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=sarmakska/Sarmalink-ai&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=sarmakska/Sarmalink-ai&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=sarmakska/Sarmalink-ai&type=Date" />
+ </picture>
+</a>
+
 **An open-source, multi-provider AI backend with automatic failover.**
 
 Built by [Sarma Linux](https://sarmalinux.com) — 17 months of development, open-sourced for everyone.
@@ -296,3 +306,26 @@ curl https://your-deploy.vercel.app/api/v1/chat/completions \
 MIT License — see [LICENSE](LICENSE).
 
 Built with care by [Sarma Linux](https://sarmalinux.com).
+
+---
+
+## More open source by Sarma
+
+Part of a portfolio of twelve production-shaped open-source repositories built and maintained by [Sarma](https://sarmalinux.com).
+
+| Repository | What it is |
+|---|---|
+| [Sarmalink-ai](https://github.com/sarmakska/Sarmalink-ai) | Multi-provider OpenAI-compatible AI gateway with 14-engine failover and intent-based plugin auto-routing |
+| [agent-orchestrator](https://github.com/sarmakska/agent-orchestrator) | Durable multi-agent workflows in TypeScript with deterministic replay and Inspector UI |
+| [voice-agent-starter](https://github.com/sarmakska/voice-agent-starter) | Sub-second full-duplex voice agent loop. WebRTC, mediasoup, pluggable STT / LLM / TTS |
+| [ai-eval-runner](https://github.com/sarmakska/ai-eval-runner) | Evals as code. Python, DuckDB, FastAPI viewer, regression mode for CI |
+| [mcp-server-toolkit](https://github.com/sarmakska/mcp-server-toolkit) | Production Model Context Protocol server starter (Python / FastAPI) |
+| [local-llm-router](https://github.com/sarmakska/local-llm-router) | OpenAI-compatible proxy that routes to Ollama or cloud providers based on policy |
+| [rag-over-pdf](https://github.com/sarmakska/rag-over-pdf) | Minimal end-to-end RAG starter for PDF corpora |
+| [receipt-scanner](https://github.com/sarmakska/receipt-scanner) | Vision OCR for receipts with Zod-validated JSON output |
+| [webhook-to-email](https://github.com/sarmakska/webhook-to-email) | Webhook receiver that forwards events to email via Resend |
+| [k8s-ops-toolkit](https://github.com/sarmakska/k8s-ops-toolkit) | Helm chart for shipping Next.js to Kubernetes with full observability stack |
+| [terraform-stack](https://github.com/sarmakska/terraform-stack) | Vercel + Supabase + Cloudflare + DigitalOcean modules in one Terraform repo |
+| [staff-portal](https://github.com/sarmakska/staff-portal) | Open-source HR / ops portal — leave, attendance, expenses, kiosk mode |
+
+Engineering essays at [sarmalinux.com/blog](https://sarmalinux.com/blog) &middot; All projects at [sarmalinux.com/open-source](https://sarmalinux.com/open-source)
