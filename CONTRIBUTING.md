@@ -88,7 +88,7 @@ Open an issue with:
 
 ## Security
 
-Do not open public issues for security vulnerabilities. Email `helpme@sarmalinux.com` instead. See [SECURITY.md](SECURITY.md).
+Do not open public issues for security vulnerabilities. Email `sarma@sarmalinux.com` instead. See [SECURITY.md](SECURITY.md).
 
 ## License
 

@@ -4,7 +4,7 @@
 
 If you discover a security vulnerability in SarmaLink-AI, please **do not** open a public GitHub issue.
 
-Instead, email **helpme@sarmalinux.com** with:
+Instead, email **sarma@sarmalinux.com** with:
 
 - A clear description of the vulnerability
 - Steps to reproduce
