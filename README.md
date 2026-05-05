@@ -1,7 +1,7 @@
 # SarmaLink-AI
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)](https://nextjs.org)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
@@ -229,7 +229,7 @@ The Manus integration in this repo lets you delegate long-running agentic tasks.
 
 ## Tech Stack
 
-- **Framework**: Next.js 14 App Router + TypeScript
+- **Framework**: Next.js 16 App Router + TypeScript
 - **Styling**: Tailwind CSS
 - **Database**: Supabase (PostgreSQL + Auth)
 - **File Storage**: Cloudflare R2 (S3-compatible, 10GB free)
