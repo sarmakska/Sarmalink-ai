@@ -6,9 +6,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  experimental: {
-    serverComponentsExternalPackages: ['mammoth', 'xlsx'],
-  },
+  serverExternalPackages: ['mammoth', 'exceljs'],
 }
 
 export default nextConfig

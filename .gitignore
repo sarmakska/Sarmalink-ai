@@ -1,11 +1,21 @@
+# Dependencies
 node_modules/
+
+# Build output
 .next/
-.env
-.env.local
-.env.*.local
+build/
+dist/
+out/
 *.tsbuildinfo
 next-env.d.ts
 .vercel
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS and editor cruft
 .DS_Store
 Thumbs.db
 

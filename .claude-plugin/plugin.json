@@ -1,6 +1,6 @@
 {
   "name": "sarmalink-ai",
   "description": "Skills for installing, configuring, and deploying SarmaLink-AI — open-source multi-provider AI assistant",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "license": "MIT"
 }
