@@ -46,7 +46,7 @@ OpenAI-compatible AI gateway product called <<YOUR PRODUCT NAME>>.
 
 PRODUCT POSITIONING
 - Name: <<YOUR PRODUCT NAME>>
-- One-line: <<YOUR ONE-LINE PITCH e.g. "Free frontier AI for builders, with automatic failover across 14 engines">>
+- One-line: <<YOUR ONE-LINE PITCH e.g. "Frontier AI for builders, with automatic failover across ten providers and per-model cost tracking">>
 - Audience: <<YOUR AUDIENCE e.g. "indie developers and small teams">>
 - Tone: <<YOUR TONE e.g. "confident, technical, no fluff">>
 

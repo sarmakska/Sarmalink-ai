@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+- **Frontier provider adapters.** A new `anthropic` provider type wired through Anthropic's OpenAI-compatible endpoint (with the `anthropic-version` header), so Opus 4.7 streams through the same pipeline as every other engine. Opus 4.7, GPT-5.5 (via GitHub Models) and Gemini 3.5 Pro are promoted to the head of the Smart, Reasoner, Coder and Live failover chains. Each step is skipped at runtime when its provider has no configured key, so free-only deployments fall straight through to the existing free-tier engines. `ANTHROPIC_API_KEY` (and `_2` and so on) plus optional `ANTHROPIC_VERSION` are collected in `lib/env/validate.ts`.
+- **Cross-provider prompt caching** (`lib/providers/cache.ts`). Normalises Anthropic ephemeral `cache_control` breakpoints, the OpenAI-compatible `prompt_cache_key` prefix, and Gemini implicit caching behind one pure call. The failover runner applies it to the stable system prefix, keyed on the selected mode. On by default; set `ENABLE_PROMPT_CACHE=false` to disable. A no-op for prompts below 1 KB.
+- **Structured streaming protocol** (`lib/streaming/events.ts`). A typed discriminated union for every SSE frame (`token`, `thinking`, `backend`, `auto_routed`, `image`, `sources`, `usage`, `done`, `error`) with a serialiser, a validating parser, and a usage reader that normalises OpenAI and Anthropic cache-hit accounting. The runner now emits a `usage` frame carrying prompt-cache hits before the `backend` frame.
+- **MCP tool-call passthrough** (`lib/plugins/mcp.ts`, `app/api/v1/mcp/`). JSON-RPC 2.0 `tools/list` and `tools/call` against any Model Context Protocol server over the Streamable HTTP transport, parsing both plain-JSON and SSE response bodies. `GET /api/v1/mcp?plugin=<id>` lists tools, `POST /api/v1/mcp` invokes one; upstream auth is taken from the plugin's configured token env var.
+- **Per-model cost dashboards** (`lib/providers/cost.ts`). A May-2026 list-price table, a pure per-turn cost function that bills cached prompt tokens at the cached rate, and an aggregator that rolls the `ai_events` log into a per-model USD breakdown with a paid/free split. The admin health endpoint returns this under a `cost` block.
+- End-to-end test (`__tests__/e2e-frontier-flow.test.ts`) with fixtures exercising the full failover, prompt-caching, usage and cost path. Test count is now 151, up from 110.
+
+### Changed
+- README rewritten as a product page with a Mermaid architecture diagram, a one-line tagline, a three-sentence overview, the updated six-mode table, and sections for the new features.
+- Reconciled the provider count across code and docs. The gateway has ten chat providers (Anthropic, GitHub Models, Gemini, Groq, SambaNova, Cerebras, OpenRouter, Cohere, Mistral, Ollama); Cloudflare and Tavily power tools rather than chat. README and wiki no longer claim "seven providers" or "36 engines".
+- CI now runs on Node 24.
+- `package.json` version bumped to 1.3.0 and the description updated to describe the gateway feature set.
+
+### Security
+- Security disclosure address corrected to `security@sarmalinux.com` and an explicit supported-versions table added to `SECURITY.md`.
+- MCP passthrough never accepts an upstream secret from the client; it reads the bearer token from the plugin's configured env var only.
+
 ## [1.2.0] — 2026-05-03
 
 ### Added

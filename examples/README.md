@@ -24,8 +24,9 @@ If you do not have a deployment yet, follow [`docs/MAKE-IT-YOURS.md`](../docs/MA
 
 Every modern chat client speaks the OpenAI Chat Completions protocol. Pointing a client's `baseURL` at SarmaLink-AI gives you instant access to:
 
-- **14-engine multi-provider failover** (Groq → SambaNova → Cerebras → Google → Cloudflare → OpenRouter → ...) — invisible to the client
-- **Intent-based plugin auto-routing** (research → rag-over-pdf, voice → voice-agent-starter, etc.) when `ENABLE_PLUGIN_AUTOROUTE=true`
+- **Multi-provider failover up to 20 steps** (Opus 4.7 -> GPT-5.5 -> Gemini 3.5 Pro -> SambaNova -> Groq -> ... -> the free-tier pool), invisible to the client. Premium steps are skipped when their key is absent.
+- **Cross-provider prompt caching** of the stable system prefix, on by default
+- **Intent-based plugin auto-routing** (research -> rag-over-pdf, voice -> voice-agent-starter, and so on) when `ENABLE_PLUGIN_AUTOROUTE=true`
 - **Persistent memory** via Supabase (set the `user_id` field on requests)
 - **Streaming** with proper SSE chunking that any OpenAI-compatible parser handles
 
@@ -33,9 +34,10 @@ No client code change is needed. Switch the base URL, keep using the SDK you alr
 
 ## What you cannot do via this endpoint
 
-- Image generation — separate endpoint at `POST /api/images/generate`
-- Image editing — `POST /api/images/edit`
-- File attachment extraction — `POST /api/attachments/upload`
-- Manus task delegation — `POST /api/v1/manus`
+- Image generation, separate endpoint at `POST /api/images/generate`
+- Image editing, `POST /api/images/edit`
+- File attachment extraction, `POST /api/attachments/upload`
+- Manus task delegation, `POST /api/v1/manus`
+- MCP tool calls, `GET`/`POST /api/v1/mcp`
 
 See [`docs/HOW-IT-WORKS.md`](../docs/HOW-IT-WORKS.md) for the full surface.

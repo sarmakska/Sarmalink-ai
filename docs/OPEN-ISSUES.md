@@ -2,7 +2,9 @@
 
 SarmaLink-AI was audited by two external critics in April 2026. Their feedback made the project better. This doc is the public record of what they said, what was fixed immediately, and what is still open for contributors.
 
-If any of these resonate, copy the heading into a GitHub issue and start a PR. Every item below is a real, bounded task — no "build a UI, good luck."
+If any of these resonate, copy the heading into a GitHub issue and start a PR. Every item below is a real, bounded task, no "build a UI, good luck."
+
+> **Shipped in v1.3.0 (2026-05-31).** Frontier adapters (Opus 4.7, GPT-5.5, Gemini 3.5 Pro), cross-provider prompt caching, a typed structured-streaming protocol, MCP tool-call passthrough, and per-model cost dashboards. The GitHub Models, Cohere and Mistral provider tasks from Round 3 below are now done. The dependency-major-bump tasks are tracked as separate GitHub issues.
 
 ---
 
@@ -18,7 +20,7 @@ If any of these resonate, copy the heading into a GitHub issue and start a PR. E
 
 **Critic:** *"Coverage for `/api/` logic is effectively 0%. A project whose selling point is 14-engine failover needs integration tests for 429 and 5xx."*
 
-**Fix (shipped):** [__tests__/failover.test.ts](../__tests__/failover.test.ts) now exercises six scenarios: step-1 success, 429-then-fallthrough, total 5xx exhaustion, thrown network errors, skipping unconfigured providers, and `<think>` block separation. 96 tests pass total.
+**Fix (shipped):** [__tests__/failover.test.ts](../__tests__/failover.test.ts) exercises six scenarios: step-1 success, 429-then-fallthrough, total 5xx exhaustion, thrown network errors, skipping unconfigured providers, and `<think>` block separation. An end-to-end test ([__tests__/e2e-frontier-flow.test.ts](../__tests__/e2e-frontier-flow.test.ts)) drives the full failover, prompt-caching, usage and cost path against fixtures. 151 tests pass total.
 
 ### ✅ FIXED · Supabase CLI bootstrap
 
@@ -107,7 +109,7 @@ If any of these resonate, copy the heading into a GitHub issue and start a PR. E
 **Acceptance criteria:**
 - Swap the manual `buf.split('\n')` loop in [lib/providers/failover.ts](../lib/providers/failover.ts) for `eventsource-parser`
 - `<think>` and `delta.reasoning` handling must still work
-- All 6 failover tests + 39 router tests must stay green
+- All failover tests + 39 router tests must stay green
 - Bundle-size delta noted in the PR
 
 **Scope:** 1 day. Label: `good first issue` · `refactor`.
@@ -120,18 +122,9 @@ If any of these resonate, copy the heading into a GitHub issue and start a PR. E
 
 A third reviewer pointed out that SarmaLink-AI is leaving frontier models on the table that are currently free. Every one of these is an OpenAI-compatible (or thin-wrapper) provider that can slot into the existing failover with ~10 lines of code per provider. Every one is a great first PR — scoped, bounded, and immediately user-visible.
 
-### 🟡 OPEN · GitHub Models (`o3-mini`, `GPT-4o`, `GPT-4o-mini`, `Mistral Large 2`)
+### ✅ FIXED · GitHub Models (now GPT-5.5, `o3-mini`, `gpt-4o`, `gpt-4o-mini`)
 
-**Why it matters:** users ask for OpenAI models. We currently ship none. GitHub Models exposes an OpenAI-compatible endpoint backed by a developer's GitHub Personal Access Token — zero card, no billing.
-
-**Acceptance criteria:**
-- Add `github-models` to `ProviderType` and registry
-- Endpoint: `https://models.inference.ai.azure.com/v1/chat/completions`
-- Auth: Bearer `GITHUB_MODELS_TOKEN` env var
-- Add `o3-mini` as step 1 of `reasoner` failover, `gpt-4o-mini` as a `fast` fallback
-- Document the rate limit (generous but finite) in env-matrix docs
-
-**Scope:** 1 day. Label: `good first issue` · `providers`.
+**Shipped.** `github-models` is in `ProviderType` and the registry, authed with `GITHUB_MODELS_TOKEN`. GPT-5.5 leads Smart/Reasoner/Coder when a token is present, with o3-mini and gpt-4o-mini deeper in the chains. Rate limits documented in [ENV-MATRIX.md](ENV-MATRIX.md).
 
 ### 🟡 OPEN · Google Gemini 2.5 **Pro** (2M token context)
 
@@ -145,29 +138,13 @@ A third reviewer pointed out that SarmaLink-AI is leaving frontier models on the
 
 **Scope:** 1 day. Label: `good first issue` · `providers`.
 
-### 🟡 OPEN · Cohere Command R+ (top of LMSYS, free dev tier)
+### ✅ FIXED · Cohere Command R+
 
-**Why it matters:** Command R+ has state-of-the-art tool use and RAG adherence. Free dev tier: ~1,000 calls/month.
+**Shipped.** `cohere` is in `ProviderType`, using Cohere's OpenAI-compatibility endpoint. `command-r-plus-08-2024` is slotted into the Smart and Live chains.
 
-**Acceptance criteria:**
-- Add a thin adapter in `lib/providers/` that translates OpenAI-chat format to Cohere's `/chat` endpoint
-- Add `cohere` to `ProviderType`
-- Slot `command-r-plus` into step 2 of `smart` failover
-- Handle Cohere's streaming SSE (slightly different shape than OpenAI)
+### ✅ FIXED · Mistral La Plateforme (`Codestral`, `Pixtral-12B`)
 
-**Scope:** 1–2 days. Label: `help wanted` · `providers`.
-
-### 🟡 OPEN · Mistral La Plateforme (`Codestral`, `Pixtral-12B`)
-
-**Why it matters:** Codestral is purpose-built for code — FIM and repo-level refactoring. Pixtral-12B is a strong free vision model.
-
-**Acceptance criteria:**
-- Add `mistral` to `ProviderType` with `https://api.mistral.ai/v1/chat/completions` endpoint
-- Slot `codestral-latest` into `coder` failover after DeepSeek
-- Slot `pixtral-12b-2409` into `vision` failover
-- Document free-tier limits in env-matrix
-
-**Scope:** 1 day. Label: `good first issue` · `providers`.
+**Shipped.** `mistral` is in `ProviderType` with the `https://api.mistral.ai/v1/chat/completions` endpoint. `codestral-latest` sits in the Coder chain and `pixtral-12b-2409` in the Vision chain. Free-tier limits documented in [ENV-MATRIX.md](ENV-MATRIX.md).
 
 ### 🟡 OPEN · Hugging Face Serverless Inference (the infinite fallback)
 

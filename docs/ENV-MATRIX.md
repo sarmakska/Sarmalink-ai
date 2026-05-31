@@ -72,6 +72,48 @@ Total Gemini key capacity: up to 18 keys.
 | `OPENROUTER_API_KEY_2`| No       |           |                                                  |
 | ... through `_5`      | No       |           |                                                  |
 
+## Anthropic (Opus 4.7, PAID frontier)
+
+| Variable              | Required | Pool Size | If Missing                                        |
+|-----------------------|----------|-----------|---------------------------------------------------|
+| `ANTHROPIC_API_KEY`   | No       | Up to 4   | Opus 4.7 steps skipped; chains run free-tier only |
+| `ANTHROPIC_API_KEY_2` | No       |           |                                                   |
+| `ANTHROPIC_VERSION`   | No       | `2023-06-01` | Version header pinned to the default            |
+
+This is the one paid provider. Wired through the OpenAI-compatible endpoint, so it streams through the same pipeline as every other engine.
+
+## GitHub Models (GPT-5.5, o3-mini)
+
+| Variable               | Required | Pool Size | If Missing                                  |
+|------------------------|----------|-----------|---------------------------------------------|
+| `GITHUB_MODELS_TOKEN`  | No       | Up to 4   | GPT-5.5 / o3-mini / gpt-4o steps skipped    |
+| `GITHUB_MODELS_TOKEN_2`| No       |           |                                             |
+
+## Cohere / Mistral
+
+| Variable          | Required | Pool Size | If Missing                          |
+|-------------------|----------|-----------|-------------------------------------|
+| `COHERE_API_KEY`  | No       | Up to 4   | Command R+ steps skipped            |
+| `MISTRAL_API_KEY` | No       | Up to 4   | Codestral and Pixtral steps skipped |
+
+## Ollama (Local Fallback)
+
+| Variable      | Required | Default                  | If Missing                                  |
+|---------------|----------|--------------------------|---------------------------------------------|
+| `OLLAMA_URL`  | No       | (unset; step disabled)   | Local offline fallback step is skipped      |
+
+Set to your Ollama host URL (for example `http://localhost:11434`) to enable the final local failover step.
+
+## Feature Toggles
+
+| Variable                  | Required | Default | Effect                                                        |
+|---------------------------|----------|---------|---------------------------------------------------------------|
+| `ENABLE_PROMPT_CACHE`     | No       | `true`  | Set to `false` to disable cross-provider prompt caching       |
+| `ENABLE_OPENAI_PROXY`     | No       | (unset) | Set to `true` to expose `/api/v1/chat/completions`            |
+| `ENABLE_PLUGIN_AUTOROUTE` | No       | (unset) | Set to `true` to dispatch matched intents to sibling plugins  |
+| `PLUGIN_MCP_SERVER_URL`   | No       | (unset) | MCP server endpoint for `/api/v1/mcp`                         |
+| `PLUGIN_MCP_SERVER_TOKEN` | No       | (unset) | Bearer token sent to the MCP server                          |
+
 ## Tavily (Web Search)
 
 | Variable           | Required | Pool Size | If Missing                                        |

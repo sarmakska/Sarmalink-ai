@@ -4,7 +4,7 @@ Open-source multi-provider AI assistant with automatic failover. Built by Sarma 
 
 ## Architecture
 
-- **Framework:** Next.js 14 App Router + TypeScript
+- **Framework:** Next.js 16 App Router + TypeScript
 - **Database:** Supabase (PostgreSQL + Auth + RLS)
 - **File storage:** Cloudflare R2 (optional)
 - **Image gen:** Cloudflare Workers AI FLUX.2 klein (optional)
@@ -15,11 +15,13 @@ Open-source multi-provider AI assistant with automatic failover. Built by Sarma 
 - `app/api/ai-chat/route.ts` — thin route handler (~30 lines), delegates to orchestrator
 - `lib/services/` — 8 service modules (chat-orchestrator, intent-router, quota-service, streaming-service, etc.)
 - `lib/router/index.ts` — unified intent detection with `routeIntent()` entrypoint
-- `lib/providers/` — provider registry and failover runner
+- `lib/providers/` — provider registry, failover runner, prompt caching (`cache.ts`), cost accounting (`cost.ts`)
+- `lib/streaming/events.ts` — typed structured-streaming SSE protocol
+- `lib/plugins/mcp.ts` — MCP JSON-RPC tool-call passthrough
 - `lib/env/validate.ts` — environment variable validation
 - `lib/supabase/` — Supabase client setup (server + admin)
 - `supabase/migrations/001_sarmalink_ai.sql` — database schema (4 tables)
-- `__tests__/` — 90 tests across 4 suites (vitest)
+- `__tests__/` — 151 tests across 11 suites (vitest), including an end-to-end frontier flow with fixtures
 - `docs/` — ARCHITECTURE, DB-SCHEMA, ENV-MATRIX, FAILURE-MODES, DEPLOY
 
 ## Environment variables
@@ -30,11 +32,11 @@ See `.env.example` for the full list. Minimum required:
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anon key
 - `GROQ_API_KEY` — at least one chat provider
 
-Optional providers: SambaNova, Cerebras, Google Gemini, OpenRouter, Tavily, Cloudflare.
+Optional chat providers: SambaNova, Cerebras, Google Gemini, GitHub Models (GPT-5.5, o3-mini), Anthropic (Opus 4.7, paid), OpenRouter, Cohere, Mistral, Ollama. Optional tool providers: Tavily (search), Cloudflare (image gen + R2). Optional toggles: `ENABLE_PROMPT_CACHE`, `ENABLE_OPENAI_PROXY`, `ENABLE_PLUGIN_AUTOROUTE`.
 
 ## Commands
 
-- `npm test` — run vitest suite (90 tests)
+- `npm test` — run vitest suite (151 tests)
 - `npx tsc --noEmit` — typecheck
 - `npm run build` — production build
 - `npm run dev` — development server

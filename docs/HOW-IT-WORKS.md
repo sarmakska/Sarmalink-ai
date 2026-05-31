@@ -1,6 +1,6 @@
 # How SarmaLink-AI Works
 
-The complete technical breakdown. How 36 engines across 7 providers deliver 99.9999% uptime at zero cost.
+The complete technical breakdown. How 74 engine entries across ten chat providers deliver near-continuous uptime, free on the free tiers and frontier-grade when you add a premium key.
 
 **Full visual version:** [sarmalinux.com/products/sarmalink-ai/how-it-works](https://sarmalinux.com/products/sarmalink-ai/how-it-works)
 
@@ -8,9 +8,9 @@ The complete technical breakdown. How 36 engines across 7 providers deliver 99.9
 
 ## The Problem
 
-Every AI app has a single point of failure. You build on OpenAI — it returns 429 — your users see an error. You switch to Anthropic — it goes down for maintenance — same story.
+Every AI app has a single point of failure. You build on one provider, it returns a 429, and your users see an error. You switch to another, it goes down for maintenance, and you are back to the same story.
 
-The problem is not that providers are unreliable. They're remarkably reliable 99% of the time. The problem is that the 1% is unpredictable, and your users experience 100% of it.
+The problem is not that providers are unreliable. They are remarkably reliable 99 per cent of the time. The problem is that the 1 per cent is unpredictable, and your users experience 100 per cent of it.
 
 ## The Solution: Multi-Provider Failover
 
@@ -19,36 +19,41 @@ SarmaLink-AI treats every provider as a commodity. If one is busy, the next fire
 ```
 User sends: "Draft a follow-up email"
 
-Auto-router → Smart mode (14-engine failover)
+Auto-router -> Smart mode (up to 20-step failover)
 
-Step 1 · SambaNova · DeepSeek V3.2 (685B)
-  → Key 3 (round-robin rotation across 8 keys)
-  → 200 OK · First token in 820ms
-  → Streaming...
+Step 1 - Anthropic - Opus 4.7   (skipped if no ANTHROPIC_API_KEY)
+Step 2 - GitHub Models - GPT-5.5 (skipped if no token)
+Step 3 - Gemini 3.5 Pro          (skipped if no key)
+Step 4 - SambaNova - DeepSeek V3.2 (685B)
+  -> Key 3 (round-robin rotation across 8 keys)
+  -> 200 OK - first token in 820ms
+  -> the system prefix is served from the prompt cache
+  -> Streaming...
 
 User sees a polished email. No errors. No delay.
-If Step 1 had returned 429, Step 2 fires in 47ms.
+If a step returns 429, the next fires in 47ms.
 ```
 
 ### The numbers
 
 - **47ms** to fail over between providers (faster than a human blink)
-- **14** maximum failover steps (Smart mode)
+- **20** maximum failover steps (Smart mode)
+- **74** engine entries across the six modes
 - **0** times a user has seen a full-chain exhaustion error
 
 ---
 
 ## Why Each Technology Was Chosen
 
-### Next.js 14 (App Router)
-**Why:** Server components keep API keys server-side. App Router gives file-based routing, streaming responses, and edge deployment. The entire backend is API routes — no separate server needed.
+### Next.js 16 (App Router)
+**Why:** Server components keep API keys server-side. App Router gives file-based routing, streaming responses, and edge deployment. The entire backend is API routes, no separate server needed.
 
 **Why not Express:** Requires a separate server, no SSR, no edge. Two repos instead of one.
 
 ### TypeScript
 **Why:** Catches provider API shape changes at compile time. When SambaNova changes their response format, TypeScript finds every broken call site before users do.
 
-**Why not JavaScript:** Runtime `undefined` errors are the #1 cause of production bugs. With 7 different API shapes, type safety is non-negotiable.
+**Why not JavaScript:** Runtime `undefined` errors are the number-one cause of production bugs. With ten different provider API shapes, type safety is non-negotiable.
 
 ### Supabase (PostgreSQL)
 **Why:** Auth, database, and Row-Level Security in one service. RLS means even if the code has a bug, PostgreSQL refuses to serve User A's data to User B. Free tier: 1GB storage, unlimited API calls.
@@ -71,9 +76,28 @@ If Step 1 had returned 429, Step 2 fires in 47ms.
 **Why not S3:** Egress fees. Why not Vercel Blob: limited free tier and vendor-locked.
 
 ### Vitest
-**Why:** 90 tests in 800ms. Same module resolution as Next.js. No config needed.
+**Why:** 151 tests in under a second. Same module resolution as Next.js. No config needed.
 
 **Why not Jest:** Slower startup, requires ts-jest config, doesn't share Vite's module graph.
+
+---
+
+## What v1.3.0 adds
+
+### Frontier adapters (opt-in)
+Opus 4.7, GPT-5.5 and Gemini 3.5 Pro sit at the head of the Smart, Reasoner, Coder and Live chains. They are pure additions to the failover list: a step with no configured key is skipped at runtime, so a free-only deployment is unchanged. Anthropic is wired through its OpenAI-compatible endpoint, so it streams through the same pipeline as every other engine.
+
+### Cross-provider prompt caching
+The system prefix is large and identical across turns in a mode. `lib/providers/cache.ts` marks it cacheable using whatever the winning provider supports: Anthropic ephemeral breakpoints, an OpenAI-compatible `prompt_cache_key`, or Gemini implicit caching. Cache reads bill at a fraction of the input rate, and the cost dashboard accounts for them. Disable with `ENABLE_PROMPT_CACHE=false`.
+
+### Structured streaming
+Every SSE frame is a typed event from a documented union (`lib/streaming/events.ts`). A `usage` frame carrying prompt-cache hits is emitted just before `done`. Unknown event types should be ignored by clients, so the protocol grows without breaking consumers.
+
+### MCP tool-call passthrough
+`GET /api/v1/mcp` lists the tools a configured Model Context Protocol server exposes; `POST /api/v1/mcp` invokes one by name over JSON-RPC 2.0. Upstream auth comes from the plugin's configured token env var, never from the client.
+
+### Per-model cost dashboards
+`lib/providers/cost.ts` carries a list-price table and rolls the event log into a per-model USD breakdown with a paid/free split. The admin health endpoint returns it under a `cost` block. Free-tier-only deployments report zero.
 
 ---
 
@@ -109,11 +133,12 @@ If Step 1 had returned 429, Step 2 fires in 47ms.
 - You're building the entire app from scratch
 
 ### SarmaLink-AI (free, open source)
-- 36 engines, 7 providers, <50ms failover
+- 74 engine entries, ten chat providers, sub-50ms failover, optional frontier engines
+- Cross-provider prompt caching, structured streaming, MCP passthrough, per-model cost dashboards
 - Full app: auth, database, RLS, streaming, memory, tools
 - AI-assisted setup: non-developers deploy in 15 minutes
 - White-label via env vars: zero code changes
-- **The only option with failover + full app + AI setup out of the box**
+- **The only option with failover plus a full app plus an AI setup out of the box**
 
 ---
 
@@ -150,10 +175,10 @@ See [docs/SETUP-AI.md](SETUP-AI.md) for the full setup prompt.
 | Cloudflare | 10,000 neurons/day | Workers AI | 10,000 images/day |
 | **Total** | | | **207,000+ req/day** |
 
-For comparison: ChatGPT Plus at $20/user/month for 15,000 users = **$300,000/month**.
+For comparison: ChatGPT Plus at $20/user/month for 15,000 users is **$300,000/month**.
 
-SarmaLink-AI serves the same 15,000 users at **$0/month**.
+SarmaLink-AI serves the same 15,000 users at **$0/month** on the free tiers. Add a premium key for the cases that warrant it, and the per-model cost dashboard shows exactly what that spend is.
 
 ---
 
-Built by [Sarma Linux](https://sarmalinux.com) — MIT License — v1.1.0
+Built by [Sarma Linux](https://sarmalinux.com). MIT Licence. v1.3.0

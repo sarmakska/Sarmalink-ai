@@ -61,7 +61,7 @@ Using all the keys I gave you:
 ## Step 6 — Verify setup
 Run these commands and tell me if anything fails:
 1. `npx tsc --noEmit` (typecheck)
-2. `npm test` (should see 90 tests pass)
+2. `npm test` (should see 151 tests pass)
 3. `npm run build` (production build)
 
 If anything fails, fix it.

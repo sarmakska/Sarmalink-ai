@@ -66,6 +66,31 @@ The proxy layer adds the configured auth header and forwards the
 request. The response is the plugin's response, plus the originating
 plugin id.
 
+## MCP tool-call passthrough
+
+Any plugin that advertises an `mcp` intent and has its endpoint set can be
+driven as a Model Context Protocol server. `lib/plugins/mcp.ts` speaks
+JSON-RPC 2.0 over the Streamable HTTP transport, handling both plain-JSON
+and SSE response bodies, and exposes two methods:
+
+- `GET /api/v1/mcp?plugin=<id>` calls `tools/list` and returns the tools
+  the server exposes.
+- `POST /api/v1/mcp` with `{ "plugin": "<id>", "tool": "<name>", "args": { ... } }`
+  calls `tools/call` and returns the structured result.
+
+The plugin defaults to `mcp-server-toolkit`. Upstream auth is taken from
+the plugin's configured token env var (for example `PLUGIN_MCP_SERVER_TOKEN`),
+so no secret is ever accepted from the client. Set `PLUGIN_MCP_SERVER_URL`
+to the server's RPC endpoint to enable it.
+
+```bash
+curl "https://your-deploy.vercel.app/api/v1/mcp?plugin=mcp-server-toolkit"
+
+curl -X POST https://your-deploy.vercel.app/api/v1/mcp \
+  -H "content-type: application/json" \
+  -d '{"plugin":"mcp-server-toolkit","tool":"search","args":{"q":"hello"}}'
+```
+
 ## Adding a plugin
 
 1. Edit `lib/plugins/index.ts` and add an entry.
