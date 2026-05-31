@@ -22,6 +22,7 @@ export interface EnvConfig {
         cohere: string[]
         mistral: string[]
         ollama: string[]
+        anthropic: string[]
         tavily: string[]
         cloudflare: { accountId: string; token: string }[]
     }
@@ -82,6 +83,7 @@ export function loadEnv(): EnvConfig {
         cohere: collectKeys('COHERE_API_KEY', 4),
         mistral: collectKeys('MISTRAL_API_KEY', 4),
         ollama: process.env.OLLAMA_URL ? ['local'] : [],
+        anthropic: collectKeys('ANTHROPIC_API_KEY', 4),
         tavily: collectKeys('TAVILY_API_KEY', 8),
         cloudflare: collectCloudflarePairs(),
     }
@@ -95,7 +97,8 @@ export function loadEnv(): EnvConfig {
         providers.githubModels.length +
         providers.cohere.length +
         providers.mistral.length +
-        providers.ollama.length
+        providers.ollama.length +
+        providers.anthropic.length
 
     // In production, warn (don't throw) if no providers configured — allows
     // the landing page to render without any keys set.

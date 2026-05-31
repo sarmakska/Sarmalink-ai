@@ -21,6 +21,7 @@ export type ProviderType =
   | "cohere"
   | "mistral"
   | "ollama"
+  | "anthropic"
 
 export interface FailoverStep {
   provider: ProviderType
@@ -76,10 +77,14 @@ export const MODELS: Record<ModelId, ModelDefinition> = {
     recommended: true,
     perUserDailyLimit: 1000,
     totalDailyCapacity: 10000,
-    // Failover verified live 2026-04-16 via scripts/discover-models.mjs.
-    // Quality-first: SambaNova DeepSeek V3.2 (frontier) → Groq GPT-OSS 120B (44ms)
-    // → SambaNova Llama-4-Maverick → Groq Llama 3.3 70B → deep :free fallback pool.
+    // Failover verified live 2026-05-31. Frontier-first when premium keys are
+    // present (Opus 4.7, GPT-5.5, Gemini 3.5), then the free-tier quality pool.
+    // Steps whose provider has no configured key are skipped at runtime, so a
+    // free-only deployment falls straight through to SambaNova DeepSeek V3.2.
     failover: [
+      { provider: "anthropic", model: "claude-opus-4-7", label: "Anthropic Opus 4.7" },
+      { provider: "github-models", model: "gpt-5.5", label: "GitHub GPT-5.5" },
+      { provider: "gemini-grounded", model: "gemini-3.5-pro", label: "Gemini 3.5 Pro" },
       { provider: "sambanova", model: "DeepSeek-V3.2", label: "SambaNova DeepSeek V3.2" },
       { provider: "cohere", model: "command-r-plus-08-2024", label: "Cohere Command R+" },
       { provider: "groq", model: "openai/gpt-oss-120b", label: "Groq GPT-OSS 120B" },
@@ -113,6 +118,8 @@ export const MODELS: Record<ModelId, ModelDefinition> = {
     perUserDailyLimit: 500,
     totalDailyCapacity: 5000,
     failover: [
+      { provider: "anthropic", model: "claude-opus-4-7", label: "Anthropic Opus 4.7" },
+      { provider: "github-models", model: "gpt-5.5", label: "GitHub GPT-5.5" },
       { provider: "github-models", model: "o3-mini", label: "GitHub o3-mini" },
       { provider: "sambanova", model: "DeepSeek-V3.2", label: "SambaNova DeepSeek V3.2" },
       { provider: "sambanova", model: "DeepSeek-V3.1", label: "SambaNova DeepSeek V3.1" },
@@ -141,6 +148,7 @@ export const MODELS: Record<ModelId, ModelDefinition> = {
     perUserDailyLimit: 1000,
     totalDailyCapacity: 10000,
     failover: [
+      { provider: "gemini-grounded", model: "gemini-3.5-pro", label: "Gemini 3.5 Pro + Google Search" },
       { provider: "gemini-grounded", model: "gemini-2.5-flash", label: "Gemini 2.5 Flash + Google Search" },
       { provider: "cohere", model: "command-r-plus-08-2024", label: "Cohere Command R+" },
       { provider: "gemini-grounded", model: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite + Google Search" },
@@ -212,6 +220,8 @@ export const MODELS: Record<ModelId, ModelDefinition> = {
     perUserDailyLimit: 800,
     totalDailyCapacity: 8000,
     failover: [
+      { provider: "anthropic", model: "claude-opus-4-7", label: "Anthropic Opus 4.7 (code)" },
+      { provider: "github-models", model: "gpt-5.5", label: "GitHub GPT-5.5 (code)" },
       { provider: "github-models", model: "o3-mini", label: "GitHub o3-mini" },
       { provider: "sambanova", model: "DeepSeek-V3.2", label: "SambaNova DeepSeek V3.2 (code)" },
       { provider: "groq", model: "openai/gpt-oss-120b", label: "Groq GPT-OSS 120B" },

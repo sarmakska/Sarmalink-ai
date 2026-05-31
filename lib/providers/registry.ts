@@ -33,6 +33,10 @@ export function providerEndpoint(provider: ProviderType): string | null {
         case 'cohere': return 'https://api.cohere.com/compatibility/v1/chat/completions'
         case 'mistral': return 'https://api.mistral.ai/v1/chat/completions'
         case 'ollama': return `${process.env.OLLAMA_URL || 'http://localhost:11434'}/v1/chat/completions`
+        // Anthropic exposes an OpenAI-compatible surface that maps chat
+        // completions onto the Messages API, so Opus 4.7 streams through the
+        // same SSE pipeline as every other provider.
+        case 'anthropic': return 'https://api.anthropic.com/v1/chat/completions'
         default: return null
     }
 }
@@ -57,6 +61,7 @@ export function providerKeys(provider: ProviderType): string[] {
         // Ollama runs locally without auth — 'local' is a sentinel string so the
         // failover runner treats it as a valid configured key when OLLAMA_URL is set.
         case 'ollama': return e.providers.ollama
+        case 'anthropic': return e.providers.anthropic
         default: return []
     }
 }
@@ -81,6 +86,11 @@ export function providerHeaders(provider: ProviderType, key: string): Record<str
     if (provider === 'openrouter' || provider === 'openrouter-free') {
         headers['HTTP-Referer'] = process.env.NEXT_PUBLIC_APP_URL || 'https://github.com/sarmakska/sarmalink-ai'
         headers['X-Title'] = process.env.NEXT_PUBLIC_APP_NAME || 'SarmaLink-AI'
+    }
+    if (provider === 'anthropic') {
+        // Anthropic's OpenAI-compatible endpoint still requires the version
+        // pin; without it the request is rejected with a 400.
+        headers['anthropic-version'] = process.env.ANTHROPIC_VERSION || '2023-06-01'
     }
     return headers
 }
