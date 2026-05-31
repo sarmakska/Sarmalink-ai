@@ -114,7 +114,6 @@ export function wrapToolResult(toolName: string, result: string): string {
  * persisted to ai_chat_sessions, so an injection string cannot survive
  * into a future session via memory extraction or chat history.
  */
-// eslint-disable-next-line no-misleading-character-class
 const INVISIBLE_CHAR_RE = /[\u00AD\u180E\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g
 
 export function stripInvisibleChars(text: string): string {
