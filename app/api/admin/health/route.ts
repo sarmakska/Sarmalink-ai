@@ -22,6 +22,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { env } from '@/lib/env/validate'
 import { providerAvailable } from '@/lib/providers/registry'
 import { MODELS } from '@/lib/ai-models'
+import { summariseCost, type CostEvent } from '@/lib/providers/cost'
 import type { ProviderType, ModelId } from '@/lib/ai-models'
 
 export const dynamic = 'force-dynamic'
@@ -80,7 +81,7 @@ export async function GET() {
     // fallback usage stats below.
     const { data: rawEvents } = await supabaseAdmin
         .from('ai_events')
-        .select('backend, event_type, latency_ms, model_id')
+        .select('backend, event_type, latency_ms, model_id, tokens_out, meta')
         .gte('created_at', since)
 
     const events = rawEvents ?? []
@@ -212,12 +213,27 @@ export async function GET() {
         }
     })
 
+    // ── Per-model cost dashboard ────────────────────────────────────────
+    // Roll successful turns up into an estimated USD spend per engine, billing
+    // cached prompt tokens at the cached rate. Free-tier engines cost 0, so a
+    // free-only deployment sees totalEstimatedUsd of 0.
+    const costEvents: CostEvent[] = events
+        .filter(ev => ev.event_type === 'message' || ev.event_type === 'proxy_request')
+        .map(ev => ({
+            backend: ev.backend,
+            model_id: ev.model_id,
+            tokens_out: ev.tokens_out as number | null | undefined,
+            meta: ev.meta as Record<string, unknown> | null | undefined,
+        }))
+    const cost = summariseCost(costEvents)
+
     return NextResponse.json({
         ok: true,
         timestamp: new Date().toISOString(),
         providers: stats,
         deadModels,
         fallbackUsage,
+        cost,
         summary: {
             providersConfigured: stats.filter(s => s.configured).length,
             providersTotal: stats.length,
