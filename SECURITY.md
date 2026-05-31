@@ -2,51 +2,25 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in SarmaLink-AI, please **do not** open a public GitHub issue.
+If you discover a security vulnerability in SarmaLink-AI, please do not open a public GitHub issue. Email me directly at **sarma@sarmalinux.com** with a clear description of the issue, steps to reproduce, the potential impact, and a suggested fix if you have one. I treat every report confidentially and will keep the details private until a fix is released.
 
-Instead, email **sarma@sarmalinux.com** with:
+## Response Policy
 
-- A clear description of the vulnerability
-- Steps to reproduce
-- Potential impact
-- Any suggested fix (optional)
-
-You will receive an acknowledgement within 72 hours, and a resolution plan within 7 days.
+I respond to every security report within 7 days. That first reply will confirm I have received the report and tell you whether I have reproduced the issue and what the likely remediation timeline is. I aim to ship a fix within 14 days of confirming a valid vulnerability, and I credit reporters in the release notes unless they ask to remain anonymous.
 
 ## Scope
 
-SarmaLink-AI is provided as-is under the MIT License. The core repository is a reference implementation; users deploy it under their own infrastructure with their own API keys.
-
-**In scope:**
-
-- Prompt injection vulnerabilities in the failover orchestrator
-- Authentication bypass in server-side route handlers
-- Privilege escalation via Supabase service-role misuse
-- Information disclosure through error messages or logs
-- Unsafe handling of user-uploaded files
-
-**Out of scope:**
-
-- Vulnerabilities in third-party providers (Groq, Gemini, etc.) — report to them directly
-- Issues in forks or modified versions
-- Denial of service via rate limit exhaustion (this is a free-tier constraint, not a bug)
-- Issues requiring physical access to the deployment
+SarmaLink-AI is provided as-is under the MIT Licence. The core repository is a reference implementation that you deploy on your own infrastructure with your own API keys. In scope are prompt injection in the failover orchestrator, authentication bypass in server-side route handlers, privilege escalation through Supabase service-role misuse, information disclosure via error messages or logs, and unsafe handling of user-uploaded files. Out of scope are vulnerabilities in third-party providers (report those to the provider), issues in forks or modified versions, denial of service through rate-limit exhaustion (a free-tier constraint, not a bug), and anything requiring physical access to your deployment.
 
 ## Supported Versions
 
-Only the latest released version receives security updates. We recommend running the most recent tagged release.
-
-## Disclosure Policy
-
-- Security reports are kept confidential until a fix is released.
-- Reporters are credited in the release notes unless they prefer to remain anonymous.
-- Coordinated disclosure — we aim to publish a fix within 14 days of verification.
+Only the latest released version receives security updates. I recommend running the most recent tagged release.
 
 ## Security Practices in This Project
 
-- **Secrets** — never committed. `.env.example` contains only placeholders. Environment variables are required for all API keys.
-- **Authentication** — every server-side route handler checks the Supabase user session before acting.
-- **Privileged access** — `supabaseAdmin` (service role) is used only for cross-user operations that cannot be expressed via RLS. Every such call is preceded by an explicit role check.
-- **File uploads** — capped at 15 MB per file, 10 files per request. MIME types validated server-side.
-- **Signed URLs** — image download URLs expire after 7 days. Users can regenerate on demand.
-- **Prompt sanitization** — untrusted content (file extracts, web search results, user memories) is wrapped in explicit boundary markers so the model treats it as data, not instructions.
+- **Secrets** are never committed. `.env.example` contains only placeholders, and every API key is supplied through environment variables.
+- **Authentication** is enforced on every server-side route handler, which checks the Supabase user session before acting.
+- **Privileged access** through `supabaseAdmin` (service role) is used only for cross-user operations that cannot be expressed via row-level security, and every such call is preceded by an explicit role check.
+- **File uploads** are capped at 15 MB per file and 10 files per request, with MIME types validated server-side.
+- **Signed URLs** for image downloads expire after 7 days and can be regenerated on demand.
+- **Prompt sanitisation** wraps untrusted content (file extracts, web search results, user memories) in explicit boundary markers and strips invisible control characters, so the model treats it as data rather than instructions.

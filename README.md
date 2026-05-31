@@ -1,13 +1,18 @@
 # SarmaLink-AI
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+**One AI backend that chains every free-tier provider together so your users never see a rate-limit error.**
+
+[![CI](https://github.com/sarmakska/Sarmalink-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/sarmakska/Sarmalink-ai/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/github/license/sarmakska/Sarmalink-ai?color=yellow)](https://github.com/sarmakska/Sarmalink-ai/blob/main/LICENSE)
+[![Language](https://img.shields.io/github/languages/top/sarmakska/Sarmalink-ai?logo=typescript&logoColor=white)](https://github.com/sarmakska/Sarmalink-ai)
+[![Last commit](https://img.shields.io/github/last-commit/sarmakska/Sarmalink-ai)](https://github.com/sarmakska/Sarmalink-ai/commits/main)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 [![Cloudflare](https://img.shields.io/badge/Cloudflare-R2_%2B_Workers_AI-F38020?logo=cloudflare&logoColor=white)](https://cloudflare.com)
 [![Vercel](https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel)](https://vercel.com)
-[![Open Source](https://img.shields.io/badge/Open_Source-%E2%9D%A4-red)](https://github.com/sarmakska/sarmalink-ai)
+[![Open Source](https://img.shields.io/badge/Open_Source-yes-red)](https://github.com/sarmakska/sarmalink-ai)
 
 [![AI Engines](https://img.shields.io/badge/AI_Engines-36-blueviolet)](#architecture)
 [![Providers](https://img.shields.io/badge/Providers-7-blue)](#powered-by-7-providers)
@@ -29,7 +34,7 @@
 
 Built by [Sarma Linux](https://sarmalinux.com) — 17 months of development, open-sourced for everyone.
 
-> 🚀 **v1.1.0 shipped on 2026-04-20** — OpenAI-compatible proxy at `/api/v1/chat/completions`, four new free-tier providers (GitHub Models · Cohere · Mistral · Ollama local fallback), per-step fallback metrics, 110 tests green. See [CHANGELOG.md](CHANGELOG.md) for the full list and [docs/OPEN-ISSUES.md](docs/OPEN-ISSUES.md) for what's open for contributors.
+> **v1.2.0 shipped on 2026-05-03.** Cross-repo plugin system, intent-based plugin auto-routing, full Manus integration with webhook persistence, a server-rendered `/docs` page, and the white-label "Make It Yours" guide. 110 tests green. See [CHANGELOG.md](CHANGELOG.md) for the full list and [docs/OPEN-ISSUES.md](docs/OPEN-ISSUES.md) for what is open for contributors.
 
 > **What this repo is:** a headless Next.js **backend** — the failover engine, auto-router, live tools, Supabase schema, and REST/SSE API (`/api/ai-chat`). It is **not** a drop-in ChatGPT clone UI. If you want the full hosted product with dark mode, markdown rendering, and thinking traces, see [sarmalinux.com/products/sarmalink-ai](https://sarmalinux.com/products/sarmalink-ai). To build your own UI on top, point any chat client at the SSE endpoint — see [docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md) for the streaming protocol.
 
@@ -49,6 +54,21 @@ SarmaLink-AI is a production-ready AI chat backend that routes every message thr
 - **SSE streaming API** with separate `token` and `thinking` event types — bring your own UI, or consume from any HTTP client
 
 **Total cost: the providers' free tiers. No credit card needed for any of them.**
+
+---
+
+## What is in the box
+
+- **Failover engine** (`lib/providers/`) a provider-agnostic runner that walks an ordered list of engines and moves to the next in under 50 milliseconds on any 429 or 5xx.
+- **Auto-router** (`lib/router/`) instant regex-based intent detection that picks one of six modes (Smart, Reasoner, Live, Fast, Coder, Vision) with no extra LLM call.
+- **REST and SSE API** (`app/api/ai-chat/`) a thin route handler that delegates to the orchestrator and streams `token` and `thinking` events.
+- **OpenAI-compatible proxy** (`app/api/v1/chat/completions/`) opt-in drop-in for `api.openai.com`, so existing OpenAI clients work unchanged.
+- **Live tools** (`lib/services/`) real-time exchange rates, weather, and container tracking that fire before the model when intent matches.
+- **Cross-repo plugin system** (`lib/plugins/`) intent-based dispatch to sibling open-source repos for voice, eval, RAG, OCR, and workflow tasks.
+- **Supabase schema** (`supabase/migrations/`) four core tables plus the Manus tasks table, with row-level security policies.
+- **Prompt sanitisation layer** (`lib/prompts/sanitize.ts`) wraps untrusted content in boundary markers and strips invisible control characters.
+- **Test suite** (`__tests__/`) 110 vitest tests across router, failover, registry, proxy, and sanitisation.
+- **Engineering docs** (`docs/`) architecture, database schema, environment matrix, failure modes, deployment, plugins, and the white-label guide.
 
 ---
 
@@ -87,6 +107,24 @@ Extract memories in background (Groq Llama 8B)
 | **Fast** | Groq GPT-OSS 20B (41ms) | 9 engines | Quick lookups, one-liners |
 | **Coder** | DeepSeek V3.2 | 9 engines | Code generation, debugging, refactoring |
 | **Vision** | Llama-4 Scout 17B | 6 engines | Image understanding, OCR, charts |
+
+---
+
+## When to use this, and when not to
+
+**Use SarmaLink-AI when:**
+
+- You want a self-hosted AI backend that stays up even when individual providers rate-limit you.
+- You are happy to run on free-tier inference and bring your own API keys.
+- You need an OpenAI-compatible endpoint to point existing tools (Cursor, AnythingLLM, LangChain, the official SDKs) at your own deployment.
+- You want full control over routing, prompts, persistence, and the database, with no per-token billing from a managed vendor.
+
+**Look elsewhere when:**
+
+- You need a finished chat UI out of the box. This is a headless backend; the hosted product with the full interface lives at [sarmalinux.com](https://sarmalinux.com/products/sarmalink-ai).
+- You require contractual uptime or latency SLAs. Free-tier providers offer neither.
+- You are processing regulated data that cannot leave a specific region or be sent to third-party inference APIs.
+- You want a single managed model with guaranteed version pinning. SarmaLink-AI deliberately spreads load across many engines.
 
 ---
 
