@@ -16,7 +16,9 @@
  */
 
 import { providerEndpoint, providerKeys, providerHeaders } from './registry'
+import { applyPromptCache, promptCacheEnabled, DEFAULT_CACHE_CONFIG } from './cache'
 import { sanitizeStreamChunk } from '@/lib/prompts/sanitize'
+import { readUsageFromProviderPayload, type UsageEvent } from '@/lib/streaming/events'
 import type { FailoverStep } from '@/lib/ai-models'
 
 export interface FailoverResult {
@@ -25,6 +27,8 @@ export interface FailoverResult {
     label?: string
     latencyMs?: number
     tokensOut?: number
+    cachedTokens?: number
+    cacheHit?: boolean
 }
 
 export interface LogEvent {
@@ -78,17 +82,25 @@ export async function tryFailover(opts: FailoverOptions): Promise<FailoverResult
             keyIdx++
             const startedAt = Date.now()
             try {
-                const res = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: providerHeaders(step.provider, key),
-                    body: JSON.stringify({
+                // Apply cross-provider prompt caching to the stable system
+                // prefix. Keyed on the selected mode so identical prefixes hit
+                // the cache across requests. No-op when ENABLE_PROMPT_CACHE=false.
+                const requestBody = applyPromptCache(
+                    step.provider,
+                    {
                         model: step.model,
-                        messages,
+                        messages: messages as { role: string; content: unknown }[],
                         temperature: 0.7,
                         max_tokens: maxTokens,
                         top_p: 0.9,
                         stream: true,
-                    }),
+                    },
+                    { ...DEFAULT_CACHE_CONFIG, enabled: promptCacheEnabled(), cacheKey: `sarmalink-${selectedModel}` },
+                )
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: providerHeaders(step.provider, key),
+                    body: JSON.stringify(requestBody),
                 })
 
                 if (res.status === 429) {
@@ -104,16 +116,28 @@ export async function tryFailover(opts: FailoverOptions): Promise<FailoverResult
                     continue
                 }
 
-                const charCount = await streamResponseToController(res.body, controller, encoder)
+                const streamed = await streamResponseToController(res.body, controller, encoder)
 
-                if (charCount === 0) {
+                if (streamed.charCount === 0) {
                     log({ user_id: userId, event_type: 'error', model_id: selectedModel, backend: step.label, key_index: keyIdx, status: 'empty_stream' })
                     continue
                 }
 
                 const latency = Date.now() - startedAt
+                // Structured usage frame (prompt-cache hits included) before backend/done.
+                if (streamed.usage) {
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ ...streamed.usage, backend: step.label })}\n\n`))
+                }
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'backend', label: step.label })}\n\n`))
-                return { ok: true, backend: step.model, label: step.label, latencyMs: latency, tokensOut: Math.ceil(charCount / 4) }
+                return {
+                    ok: true,
+                    backend: step.model,
+                    label: step.label,
+                    latencyMs: latency,
+                    tokensOut: streamed.usage?.completionTokens ?? Math.ceil(streamed.charCount / 4),
+                    cachedTokens: streamed.usage?.cachedTokens,
+                    cacheHit: streamed.usage?.cacheHit,
+                }
             } catch (e: unknown) {
                 const msg = e instanceof Error ? e.message.slice(0, 200) : 'unknown'
                 log({ user_id: userId, event_type: 'error', model_id: selectedModel, backend: step.label, key_index: keyIdx, status: 'exception', meta: { msg } })
@@ -134,13 +158,14 @@ async function streamResponseToController(
     body: ReadableStream<Uint8Array>,
     controller: ReadableStreamDefaultController,
     encoder: TextEncoder,
-): Promise<number> {
+): Promise<{ charCount: number; usage?: UsageEvent }> {
     const reader = body.getReader()
     const dec = new TextDecoder()
     let buf = ''
     let charCount = 0
     let pendingText = ''
     let inThinkBlock = false
+    let usage: UsageEvent | undefined
 
     const sendVisible = (text: string) => {
         const clean = sanitizeStreamChunk(text)
@@ -196,11 +221,15 @@ async function streamResponseToController(
                 const reasoning = data.choices?.[0]?.delta?.reasoning || ''
                 if (reasoning) sendThinking(reasoning)
                 if (token) flushVisibleText(token)
+                // Providers attach a usage block on the final chunk; capture it
+                // (including prompt-cache hits) for the structured usage frame.
+                const u = readUsageFromProviderPayload(data)
+                if (u) usage = u
             } catch { /* skip malformed SSE line */ }
         }
     }
     if (inThinkBlock && pendingText.length > 0) { sendThinking(pendingText); pendingText = '' }
     else if (pendingText.length > 0) { sendVisible(pendingText); pendingText = '' }
 
-    return charCount
+    return { charCount, usage }
 }

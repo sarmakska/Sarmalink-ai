@@ -404,7 +404,18 @@ export async function orchestrateChat(
                         selectedModelId,
                     )
                     if (failoverResult.ok) {
-                        logEvent({ user_id: userId, event_type: 'message', model_id: selectedModelId, backend: failoverResult.label ?? failoverResult.backend, status: 'success', latency_ms: failoverResult.latencyMs, tokens_out: failoverResult.tokensOut })
+                        logEvent({
+                            user_id: userId,
+                            event_type: 'message',
+                            model_id: selectedModelId,
+                            backend: failoverResult.label ?? failoverResult.backend,
+                            status: 'success',
+                            latency_ms: failoverResult.latencyMs,
+                            tokens_out: failoverResult.tokensOut,
+                            meta: failoverResult.cachedTokens !== undefined
+                                ? { cached_tokens: failoverResult.cachedTokens, cache_hit: failoverResult.cacheHit }
+                                : undefined,
+                        })
                         lastTokensOut = failoverResult.tokensOut
                     } else {
                         logEvent({ user_id: userId, event_type: 'fallback', model_id: selectedModelId, status: 'all_providers_failed' })

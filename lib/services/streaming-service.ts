@@ -72,7 +72,7 @@ export async function tryFailover(
     controller: ReadableStreamDefaultController,
     userId: string,
     selectedModel: string,
-): Promise<{ ok: boolean; backend?: string; label?: string; latencyMs?: number; tokensOut?: number }> {
+): Promise<{ ok: boolean; backend?: string; label?: string; latencyMs?: number; tokensOut?: number; cachedTokens?: number; cacheHit?: boolean }> {
     return tryFailoverModule({
         failover: failover as FailoverStep[],
         messages, maxTokens, encoder, controller, userId, selectedModel,
