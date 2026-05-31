@@ -44,6 +44,10 @@ describe('providerEndpoint', () => {
         expect(providerEndpoint('ollama')).toBe('http://localhost:11434/v1/chat/completions')
         if (prev !== undefined) process.env.OLLAMA_URL = prev
     })
+
+    it('returns the Anthropic OpenAI-compatible URL for anthropic', () => {
+        expect(providerEndpoint('anthropic')).toBe('https://api.anthropic.com/v1/chat/completions')
+    })
 })
 
 describe('providerHeaders', () => {
@@ -66,5 +70,11 @@ describe('providerHeaders', () => {
     it('does not add referer for groq', () => {
         const h = providerHeaders('groq', 'test-key')
         expect(h['HTTP-Referer']).toBeUndefined()
+    })
+
+    it('adds the anthropic-version header for anthropic', () => {
+        const h = providerHeaders('anthropic', 'test-key')
+        expect(h['anthropic-version']).toBeDefined()
+        expect(h['Authorization']).toBe('Bearer test-key')
     })
 })
