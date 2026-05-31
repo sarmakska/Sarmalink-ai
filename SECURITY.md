@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in SarmaLink-AI, please do not open a public GitHub issue. Email me directly at **sarma@sarmalinux.com** with a clear description of the issue, steps to reproduce, the potential impact, and a suggested fix if you have one. I treat every report confidentially and will keep the details private until a fix is released.
+If you discover a security vulnerability in SarmaLink-AI, please do not open a public GitHub issue. Email me directly at **security@sarmalinux.com** with a clear description of the issue, steps to reproduce, the potential impact, and a suggested fix if you have one. I treat every report confidentially and will keep the details private until a fix is released.
 
 ## Response Policy
 
@@ -14,7 +14,14 @@ SarmaLink-AI is provided as-is under the MIT Licence. The core repository is a r
 
 ## Supported Versions
 
-Only the latest released version receives security updates. I recommend running the most recent tagged release.
+Only the latest minor release line receives security updates. I recommend running the most recent tagged release at all times.
+
+| Version | Supported |
+|---|---|
+| 1.3.x | Yes |
+| 1.2.x | Security fixes only until 2026-08-01 |
+| 1.1.x | No |
+| < 1.1 | No |
 
 ## Security Practices in This Project
 

@@ -6,14 +6,19 @@ node_modules/
 build/
 dist/
 out/
+target/
 *.tsbuildinfo
 next-env.d.ts
-.vercel
+.vercel/
 
 # Environment
 .env
 .env.local
 .env.*.local
+
+# Python tooling (helper scripts, if any)
+__pycache__/
+.pytest_cache/
 
 # OS and editor cruft
 .DS_Store
