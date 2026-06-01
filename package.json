@@ -25,11 +25,13 @@
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.106.2",
     "@types/he": "^1.2.3",
+    "@types/pdfkit": "^0.17.6",
     "exceljs": "^4.4.0",
     "he": "^1.2.0",
     "lucide-react": "^0.475.0",
     "mammoth": "^1.8.0",
     "next": "^16.2.6",
+    "pdfkit": "^0.18.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },

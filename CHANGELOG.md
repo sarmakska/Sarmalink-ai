@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added (v2 ten-feature drop)
+- **Intent auto-routing** (`lib/v2/auto-route.ts`). Regex pre-filter plus Groq Llama 3.3 fallback. Gated behind `ENABLE_AUTO_ROUTE=1`.
+- **Multi-step agent runner** (`POST /api/v1/agent`, `lib/v2/agent-runner.ts`). Planner, workers, synthesiser, SSE event stream. Caps: 5 steps, 60 s per worker.
+- **MCP-shaped tool catalog** (`POST /api/v1/mcp/catalog`, `lib/v2/mcp-catalog.ts`). Bearer-protected via `MCP_INTERNAL_KEY`. Three demo tools (`current_time`, `random_uuid`, `echo`) plus an extensible `ToolDef` registry.
+- **TTS cascade** (`POST /api/v1/tts`, `lib/v2/tts.ts`). Cloudflare MeloTTS first, Gemini TTS as paid fallback. Supports EN, ES, FR, ZH, JP, KR.
+- **STT route** (`POST /api/v1/stt`, `lib/v2/stt.ts`). Groq Whisper first, Cloudflare Whisper fallback.
+- **Live-data tool functions** (`lib/tools/live.ts`). `getWeather` (Open-Meteo), `getExchangeRates` (Frankfurter), `getNews` (Hacker News Algolia). All free, no key.
+- **Image generation with key rotation** (`POST /api/v1/images/generate`, `lib/v2/image-gen.ts`). FLUX across up to 4 Cloudflare account/token pairs, optional R2 upload.
+- **Quota tracker** (`GET /api/v1/quota`, `lib/v2/quota.ts`, `supabase/migrations/20260601_ai_quota.sql`). Per-user-today and company-wide totals by tier.
+- **Smart suggestions** (`POST /api/v1/suggestions`, `lib/v2/suggestions.ts`). Three follow-up prompts via Groq Llama 3.3, low temperature, 120 token cap.
+- **Reasoning-leak stripper, PDF export, XLSX export** (`lib/sanitize/reasoning.ts`, `POST /api/v1/export/pdf`, `POST /api/v1/export/xlsx`). Stateful stream stripper for `<think>` blocks; pdfkit for PDF; exceljs for XLSX (single- or multi-sheet).
+
 ### Added
 - **Frontier provider adapters.** A new `anthropic` provider type wired through Anthropic's OpenAI-compatible endpoint (with the `anthropic-version` header), so Opus 4.7 streams through the same pipeline as every other engine. Opus 4.7, GPT-5.5 (via GitHub Models) and Gemini 3.5 Pro are promoted to the head of the Smart, Reasoner, Coder and Live failover chains. Each step is skipped at runtime when its provider has no configured key, so free-only deployments fall straight through to the existing free-tier engines. `ANTHROPIC_API_KEY` (and `_2` and so on) plus optional `ANTHROPIC_VERSION` are collected in `lib/env/validate.ts`.
 - **Cross-provider prompt caching** (`lib/providers/cache.ts`). Normalises Anthropic ephemeral `cache_control` breakpoints, the OpenAI-compatible `prompt_cache_key` prefix, and Gemini implicit caching behind one pure call. The failover runner applies it to the stable system prefix, keyed on the selected mode. On by default; set `ENABLE_PROMPT_CACHE=false` to disable. A no-op for prompts below 1 KB.

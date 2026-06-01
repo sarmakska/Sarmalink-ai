@@ -398,3 +398,18 @@ Part of a portfolio of twelve production-shaped open-source repositories built a
 | [staff-portal](https://github.com/sarmakska/staff-portal) | Open-source HR / ops portal, leave, attendance, expenses, kiosk mode |
 
 Engineering essays at [sarmalinux.com/blog](https://sarmalinux.com/blog) &middot; All projects at [sarmalinux.com/open-source](https://sarmalinux.com/open-source)
+
+## v2 features
+
+Ten additions ship in v2. Each is documented in `docs/`.
+
+* **Intent auto-routing** — `lib/v2/auto-route.ts`. Regex pre-filter plus optional LLM fallback. Gated behind `ENABLE_AUTO_ROUTE=1`. See `docs/v2-AUTO-ROUTE.md`.
+* **Multi-step agent runner** — `POST /api/v1/agent`. Planner, workers, synthesiser, SSE events. See `docs/v2-AGENT.md`.
+* **MCP-shaped tool catalog** — `POST /api/v1/mcp/catalog`. Bearer-protected via `MCP_INTERNAL_KEY`. Three demo tools plus an extensible registry. See `docs/v2-MCP-CATALOG.md`.
+* **TTS cascade** — `POST /api/v1/tts`. Cloudflare MeloTTS first, Gemini TTS as paid fallback. EN, ES, FR, ZH, JP, KR. See `docs/v2-VOICE.md`.
+* **STT cascade** — `POST /api/v1/stt`. Groq Whisper first, Cloudflare Whisper fallback. See `docs/v2-VOICE.md`.
+* **Live-data tools** — `lib/tools/live.ts`. Open-Meteo weather, Frankfurter exchange rates, Hacker News for news. No keys required. See `docs/v2-LIVE-TOOLS.md`.
+* **Image generation with key rotation** — `POST /api/v1/images/generate`. FLUX over up to four Cloudflare account/token pairs, optional R2 upload. See `docs/v2-IMAGES.md`.
+* **Quota tracker** — `GET /api/v1/quota`. Backed by `ai_chat_usage` and the `ai_usage_today` view. Migration in `supabase/migrations/20260601_ai_quota.sql`. See `docs/v2-QUOTA.md`.
+* **Smart suggestions** — `POST /api/v1/suggestions`. Three follow-up prompts via Groq Llama 3.3 70B. See `docs/v2-SUGGESTIONS.md`.
+* **Reasoning stripper, PDF export, XLSX export** — `lib/sanitize/reasoning.ts`, `POST /api/v1/export/pdf`, `POST /api/v1/export/xlsx`. See `docs/v2-EXPORTS.md`.
