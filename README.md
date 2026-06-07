@@ -36,7 +36,7 @@ SarmaLink-AI is a headless Next.js backend that routes every message through an 
 
 Built by [Sarma Linux](https://sarmalinux.com), 17 months of development, open-sourced for everyone.
 
-> **v1.3.0 shipped on 2026-05-31.** Frontier adapters for Opus 4.7, GPT-5.5 and Gemini 3.5 Pro, cross-provider prompt caching, a typed structured-streaming protocol, MCP tool-call passthrough, and per-model cost dashboards. 151 tests green. See [CHANGELOG.md](CHANGELOG.md) for the full list and [docs/OPEN-ISSUES.md](docs/OPEN-ISSUES.md) for what is open for contributors.
+> **v1.3.0 shipped on 2026-05-31.** Frontier adapters for Opus 4.7, GPT-5.5 and Gemini 3.5 Pro, cross-provider prompt caching, a typed structured-streaming protocol, MCP tool-call passthrough, and per-model cost dashboards. Every failover attempt is now wrapped in an abort-controlled timeout so a hung provider can never stall the chain. 153 tests green. See [CHANGELOG.md](CHANGELOG.md) for the full list and [docs/OPEN-ISSUES.md](docs/OPEN-ISSUES.md) for what is open for contributors.
 
 > **What this repo is:** a headless Next.js **backend**, the failover engine, auto-router, live tools, Supabase schema, and REST/SSE API (`/api/ai-chat`). It is **not** a drop-in ChatGPT clone UI. If you want the full hosted product with dark mode, markdown rendering, and thinking traces, see [sarmalinux.com/products/sarmalink-ai](https://sarmalinux.com/products/sarmalink-ai). To build your own UI on top, point any chat client at the SSE endpoint, see [docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md) for the streaming protocol.
 
@@ -62,7 +62,7 @@ SarmaLink-AI is a production-ready LLM gateway that routes every message through
 
 ## What is in the box
 
-- **Failover engine** (`lib/providers/failover.ts`) a provider-agnostic runner that walks an ordered list of engines and moves to the next in under 50 milliseconds on any 429 or 5xx, surfacing token and prompt-cache usage as it streams.
+- **Failover engine** (`lib/providers/failover.ts`) a provider-agnostic runner that walks an ordered list of engines and moves to the next in under 50 milliseconds on any 429 or 5xx, surfacing token and prompt-cache usage as it streams. Every attempt is wrapped in an abort-controlled timeout (`PROVIDER_TIMEOUT_MS`, default 30s) that guards both the connect phase and, re-armed on each chunk, the stream itself, so a hung provider is cut loose rather than stalling the request.
 - **Frontier and free-tier provider registry** (`lib/providers/registry.ts`, `lib/ai-models.ts`) ten chat providers including Anthropic Opus 4.7, GPT-5.5 via GitHub Models, and Gemini 3.5 Pro at the head of the chain when premium keys are present.
 - **Cross-provider prompt caching** (`lib/providers/cache.ts`) normalises Anthropic ephemeral breakpoints, OpenAI-compatible `prompt_cache_key` prefixes, and Gemini implicit caching behind one call.
 - **Structured streaming protocol** (`lib/streaming/events.ts`) a typed discriminated union for every SSE frame, with a serialiser, a validating parser, and a usage reader.
@@ -74,7 +74,7 @@ SarmaLink-AI is a production-ready LLM gateway that routes every message through
 - **Cross-repo plugin system** (`lib/plugins/`) intent-based dispatch to sibling open-source repos for voice, eval, RAG, OCR, and workflow tasks.
 - **Supabase schema** (`supabase/migrations/`) four core tables plus the Manus tasks table, with row-level security policies.
 - **Prompt sanitisation layer** (`lib/prompts/sanitize.ts`) wraps untrusted content in boundary markers and strips invisible control characters.
-- **Test suite** (`__tests__/`) 151 vitest tests across router, failover, registry, proxy, caching, streaming, cost, MCP, sanitisation, and an end-to-end frontier flow with fixtures.
+- **Test suite** (`__tests__/`) 153 vitest tests across router, failover, registry, proxy, caching, streaming, cost, MCP, sanitisation, and an end-to-end frontier flow with fixtures.
 - **Engineering docs** (`docs/`) architecture, database schema, environment matrix, failure modes, deployment, plugins, and the white-label guide.
 
 ---

@@ -21,7 +21,7 @@ Open-source multi-provider AI assistant with automatic failover. Built by Sarma 
 - `lib/env/validate.ts` — environment variable validation
 - `lib/supabase/` — Supabase client setup (server + admin)
 - `supabase/migrations/001_sarmalink_ai.sql` — database schema (4 tables)
-- `__tests__/` — 151 tests across 11 suites (vitest), including an end-to-end frontier flow with fixtures
+- `__tests__/` — 153 tests across 11 suites (vitest), including an end-to-end frontier flow with fixtures
 - `docs/` — ARCHITECTURE, DB-SCHEMA, ENV-MATRIX, FAILURE-MODES, DEPLOY
 
 ## Environment variables
@@ -36,7 +36,7 @@ Optional chat providers: SambaNova, Cerebras, Google Gemini, GitHub Models (GPT-
 
 ## Commands
 
-- `npm test` — run vitest suite (151 tests)
+- `npm test` — run vitest suite (153 tests)
 - `npx tsc --noEmit` — typecheck
 - `npm run build` — production build
 - `npm run dev` — development server

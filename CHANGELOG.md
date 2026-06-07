@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+- **Per-attempt failover timeouts** (`lib/providers/failover.ts`). Every provider attempt is now wrapped in an `AbortController` that fires after `PROVIDER_TIMEOUT_MS` (default 30s, clamped to 1s..300s). The timer guards the connect/headers phase and is re-armed on every streamed chunk, so a provider that hangs on connect or stalls mid-stream is aborted and the runner falls through to the next key or step instead of blocking the request indefinitely. Timeouts log a distinct `timeout` status so dashboards can tell a hung provider apart from a hard error. Two new tests bring the suite to 153.
+
 ### Added (v2 ten-feature drop)
 - **Intent auto-routing** (`lib/v2/auto-route.ts`). Regex pre-filter plus Groq Llama 3.3 fallback. Gated behind `ENABLE_AUTO_ROUTE=1`.
 - **Multi-step agent runner** (`POST /api/v1/agent`, `lib/v2/agent-runner.ts`). Planner, workers, synthesiser, SSE event stream. Caps: 5 steps, 60 s per worker.
