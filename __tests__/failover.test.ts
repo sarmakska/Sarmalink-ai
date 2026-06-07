@@ -21,7 +21,7 @@ beforeAll(() => {
     process.env.OPENROUTER_API_KEY = 'test-or-1'
 })
 
-import { tryFailover } from '@/lib/providers/failover'
+import { tryFailover, providerTimeoutMs } from '@/lib/providers/failover'
 import type { FailoverStep } from '@/lib/ai-models'
 
 function sseBody(tokens: string[]): ReadableStream<Uint8Array> {
@@ -197,6 +197,59 @@ describe('tryFailover', () => {
         expect(result.ok).toBe(true)
         expect(result.label).toBe('Groq Fast')
         expect(fetchMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('aborts a hung provider after the timeout and falls through to the next step', async () => {
+        // Tight timeout so the test runs fast. fetch() honours the AbortSignal:
+        // it stays pending until the signal fires, then rejects like the real
+        // fetch does. Step 2 then answers normally.
+        process.env.PROVIDER_TIMEOUT_MS = '50'
+        const hung = (_url: string, init: { signal?: AbortSignal }) =>
+            new Promise<Response>((_resolve, reject) => {
+                init.signal?.addEventListener('abort', () => {
+                    reject(new DOMException('The operation was aborted.', 'AbortError'))
+                })
+            })
+        const fetchMock = vi.fn()
+            .mockImplementationOnce(hung)  // groq key 1 hangs until aborted
+            .mockImplementationOnce(hung)  // groq key 2 hangs until aborted
+            .mockResolvedValueOnce(fakeResponse(200, sseBody(['recovered after timeout'])))
+        vi.stubGlobal('fetch', fetchMock)
+
+        const { controller } = collector()
+        const events: Array<{ type: string; status?: string }> = []
+
+        const result = await tryFailover({
+            failover: SIMPLE_FAILOVER,
+            messages: [],
+            maxTokens: 128,
+            encoder: new TextEncoder(),
+            controller,
+            userId: 'u1',
+            selectedModel: 'smart',
+            logEvent: e => events.push({ type: e.event_type, status: e.status }),
+        })
+
+        expect(result.ok).toBe(true)
+        expect(result.label).toBe('SambaNova DeepSeek')
+        // Two timeouts logged distinctly from generic exceptions.
+        expect(events.filter(e => e.status === 'timeout')).toHaveLength(2)
+        expect(events.filter(e => e.status === 'exception')).toHaveLength(0)
+        delete process.env.PROVIDER_TIMEOUT_MS
+    })
+
+    it('providerTimeoutMs defaults to 30s and clamps out-of-range values', () => {
+        delete process.env.PROVIDER_TIMEOUT_MS
+        expect(providerTimeoutMs()).toBe(30_000)
+        process.env.PROVIDER_TIMEOUT_MS = '5000'
+        expect(providerTimeoutMs()).toBe(5_000)
+        process.env.PROVIDER_TIMEOUT_MS = '50'           // below floor
+        expect(providerTimeoutMs()).toBe(1_000)
+        process.env.PROVIDER_TIMEOUT_MS = '999999999'     // above ceiling
+        expect(providerTimeoutMs()).toBe(300_000)
+        process.env.PROVIDER_TIMEOUT_MS = 'not-a-number'
+        expect(providerTimeoutMs()).toBe(30_000)
+        delete process.env.PROVIDER_TIMEOUT_MS
     })
 
     it('separates <think> blocks into thinking events', async () => {

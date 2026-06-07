@@ -8,6 +8,14 @@
  * to the next failover step. If the failover fully exhausts, it returns
  * `{ ok: false }` so the caller can serve a graceful error.
  *
+ * Timeouts: every attempt is guarded by an `AbortController`. If a provider
+ * does not return response headers within `PROVIDER_TIMEOUT_MS` (default
+ * 30s, configurable via env), the attempt is aborted and treated as a step
+ * failure so a single hung provider can never stall the whole failover chain.
+ * Once headers arrive the controller is left armed for the lifetime of the
+ * stream, so a provider that opens a connection and then stalls mid-stream is
+ * also cut loose rather than blocking the request forever.
+ *
  * Streaming: tokens are parsed from the provider's SSE response and pushed
  * to the downstream controller as `data: {"type":"token","text":"..."}`
  * events. Reasoning blocks (either `<think>...</think>` in the content or
@@ -20,6 +28,18 @@ import { applyPromptCache, promptCacheEnabled, DEFAULT_CACHE_CONFIG } from './ca
 import { sanitizeStreamChunk } from '@/lib/prompts/sanitize'
 import { readUsageFromProviderPayload, type UsageEvent } from '@/lib/streaming/events'
 import type { FailoverStep } from '@/lib/ai-models'
+
+/**
+ * Per-attempt timeout in milliseconds. Guards both the connect/headers phase
+ * and (re-armed on every chunk) the streaming phase, so a hung or stalled
+ * provider is cut loose instead of blocking the whole failover chain.
+ * Override with PROVIDER_TIMEOUT_MS; clamps to a sane 1s..300s range.
+ */
+export function providerTimeoutMs(): number {
+    const raw = Number(process.env.PROVIDER_TIMEOUT_MS)
+    if (!Number.isFinite(raw) || raw <= 0) return 30_000
+    return Math.min(Math.max(Math.floor(raw), 1_000), 300_000)
+}
 
 export interface FailoverResult {
     ok: boolean
@@ -77,10 +97,22 @@ export async function tryFailover(opts: FailoverOptions): Promise<FailoverResult
         const offset = rotationSeed % allKeys.length
         const keys = [...allKeys.slice(offset), ...allKeys.slice(0, offset)]
 
+        const timeoutMs = providerTimeoutMs()
+
         let keyIdx = 0
         for (const key of keys) {
             keyIdx++
             const startedAt = Date.now()
+            // One abort controller per attempt. The idle timer is re-armed on
+            // each streamed chunk (see streamResponseToController) so a mid-
+            // stream stall aborts just as a slow connect does.
+            const abort = new AbortController()
+            let idleTimer: ReturnType<typeof setTimeout> = setTimeout(() => abort.abort(), timeoutMs)
+            const armTimeout = () => {
+                clearTimeout(idleTimer)
+                idleTimer = setTimeout(() => abort.abort(), timeoutMs)
+            }
+            const clearTimeoutGuard = () => clearTimeout(idleTimer)
             try {
                 // Apply cross-provider prompt caching to the stable system
                 // prefix. Keyed on the selected mode so identical prefixes hit
@@ -101,22 +133,27 @@ export async function tryFailover(opts: FailoverOptions): Promise<FailoverResult
                     method: 'POST',
                     headers: providerHeaders(step.provider, key),
                     body: JSON.stringify(requestBody),
+                    signal: abort.signal,
                 })
 
                 if (res.status === 429) {
+                    clearTimeoutGuard()
                     log({ user_id: userId, event_type: 'rate_limit', model_id: selectedModel, backend: step.label, key_index: keyIdx, status: '429' })
                     continue
                 }
                 if (!res.ok) {
+                    clearTimeoutGuard()
                     log({ user_id: userId, event_type: 'error', model_id: selectedModel, backend: step.label, key_index: keyIdx, status: String(res.status) })
                     continue
                 }
                 if (!res.body) {
+                    clearTimeoutGuard()
                     log({ user_id: userId, event_type: 'error', model_id: selectedModel, backend: step.label, key_index: keyIdx, status: 'no_body' })
                     continue
                 }
 
-                const streamed = await streamResponseToController(res.body, controller, encoder)
+                const streamed = await streamResponseToController(res.body, controller, encoder, armTimeout)
+                clearTimeoutGuard()
 
                 if (streamed.charCount === 0) {
                     log({ user_id: userId, event_type: 'error', model_id: selectedModel, backend: step.label, key_index: keyIdx, status: 'empty_stream' })
@@ -139,6 +176,15 @@ export async function tryFailover(opts: FailoverOptions): Promise<FailoverResult
                     cacheHit: streamed.usage?.cacheHit,
                 }
             } catch (e: unknown) {
+                clearTimeoutGuard()
+                // An aborted attempt means the provider blew the timeout budget
+                // for connect or for an in-flight chunk. Log it distinctly so
+                // dashboards can tell a hung provider apart from a hard error,
+                // then fall through to the next key/step like any other failure.
+                if (abort.signal.aborted) {
+                    log({ user_id: userId, event_type: 'error', model_id: selectedModel, backend: step.label, key_index: keyIdx, status: 'timeout', meta: { timeoutMs } })
+                    continue
+                }
                 const msg = e instanceof Error ? e.message.slice(0, 200) : 'unknown'
                 log({ user_id: userId, event_type: 'error', model_id: selectedModel, backend: step.label, key_index: keyIdx, status: 'exception', meta: { msg } })
                 continue
@@ -158,6 +204,7 @@ async function streamResponseToController(
     body: ReadableStream<Uint8Array>,
     controller: ReadableStreamDefaultController,
     encoder: TextEncoder,
+    onChunk?: () => void,
 ): Promise<{ charCount: number; usage?: UsageEvent }> {
     const reader = body.getReader()
     const dec = new TextDecoder()
@@ -210,6 +257,9 @@ async function streamResponseToController(
     while (true) {
         const { done, value } = await reader.read()
         if (done) break
+        // A chunk arrived, so re-arm the idle timeout: the provider only gets
+        // the full budget again between chunks, not for the whole stream.
+        onChunk?.()
         buf += dec.decode(value, { stream: true })
         const lines = buf.split('\n')
         buf = lines.pop() ?? ''
